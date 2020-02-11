@@ -3,4 +3,4 @@
 - name: Verify masters flavor availability
   os_flavor_info:
     cloud: "{{ openstack_cloud_name }}"
-    name: "{{ masters_flavour }}"
+    name: "{{ masters_flavor }}"
