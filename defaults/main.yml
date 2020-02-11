@@ -1,2 +1,10 @@
 ---
-# defaults file for openshift4-upi-openstack
+
+masters_flavor: "m1.xlarge"
+nodes_flavor:   "m1.large"
+coreos_image: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.3/4.3.0/rhcos-4.3.0-x86_64-openstack.qcow2.gz"
+external_network: "external-network"
+subnet_range: "192.0.2.0/24"
+cluster_name: "openshift4"
+base_domain: "example.com"
+openstack_cloud_name: "openstack"

@@ -1,2 +1,4 @@
 ---
-# tasks file for openshift4-upi-openstack
+
+- name: import initial setup checks
+  import_tasks: initial_checks.yml
