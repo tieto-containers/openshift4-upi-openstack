@@ -12,7 +12,7 @@
 
 - fail:
     msg: "Could not find masters flavor! Please check that flavor {{ masters_flavor }} exists on OpenStack"
-  when: masters_openstack_flavor is undefined
+  when: masters_openstack_flavor == []
 
 
 - name: Verify nodes flavor availability
@@ -28,6 +28,6 @@
 
 - fail:
     msg: "Could not find nodes flavor! Please check that flavor {{ nodes_flavor }} exists on OpenStack"
-  when: nodes_openstack_flavor is undefined
+  when: nodes_openstack_flavor == []
 
 
