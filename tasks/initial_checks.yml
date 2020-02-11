@@ -4,3 +4,19 @@
   os_flavor_info:
     cloud: "{{ openstack_cloud_name }}"
     name: "{{ masters_flavor }}"
+
+- fail:
+    msg: "Could not find masters flavor! Please check that flavor {{ masters_flavor }} exists on OpenStack"
+  when: openstack_flavors is undefined
+
+
+- name: Verify nodes flavor availability
+  os_flavor_info:
+    cloud: "{{ openstack_cloud_name }}"
+    name: "{{ nodes_flavor }}"
+
+- fail:
+    msg: "Could not find nodes flavor! Please check that flavor {{ nodes_flavor }} exists on OpenStack"
+  when: openstack_flavors is undefined
+
+
