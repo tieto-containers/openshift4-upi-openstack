@@ -10,7 +10,8 @@
   set_fact:
     masters_openstack_flavor: "{{ masters_flavor_result.openstack_flavors }}"
 
-- fail:
+- name: Fail when could not find masters flavor
+  fail:
     msg: "Could not find masters flavor! Please check that flavor {{ masters_flavor }} exists on OpenStack"
   when: masters_openstack_flavor == []
 
@@ -26,8 +27,64 @@
   set_fact:
     nodes_openstack_flavor: "{{ nodes_flavor_result.openstack_flavors }}"
 
-- fail:
+- name: Fail when could not find nodes flavor
+  fail:
     msg: "Could not find nodes flavor! Please check that flavor {{ nodes_flavor }} exists on OpenStack"
   when: nodes_openstack_flavor == []
 
+- name: Verify that external network exists
+  os_networks_info:
+    name: "{{ external_network }}"
+  register: external_network_result
+    
+- name: Set external_network variable
+  set_fact:
+    openstack_external_network: "{{ external_network_result.openstack_networks }}"
+
+- name: Fail when could not find external network
+  fail:
+    msg: "Could not find OpenStack external network {{ external_network }}!"
+  when: openstack_external_network == []
+
+- name: Fail when provided network is not external
+  fail:
+    msg: "Network {{ external_network }} is not external!"
+  when: openstack_external_network[0]['router:external'] != true
+
+- name: Verify that openshift-install binary is in-place
+  local_action: stat path="{{ openshift_install_binary_path }}"
+  register: stat_openshift_install
+
+- name: Fail when could not find openshift-install binary
+  fail:
+    msg: "Could not find openshift-install file in {{ openshift_install_binary_path }}!"
+  when: stat_openshift_install['stat']['exists'] != true
+
+- name: Verify that network (subnet range) is not already occupied
+  os_networks_info:
+    name: "{{ subnet_range }}"
+  register: subnet_range_result
+
+- name: Fail if network (subnet range) does exists already
+  fail:
+    msg: "Network (Subnet range) for OCP cluster is already taken, please choose different, or delete the current one."
+  when: subnet_range_result.openstack_networks != []
+
+- name: Verify that RedHat CoreOS image is already uploaded to the OpenStack
+  os_image_info:
+    image: "{{ rhcos_image_name }}"
+  register: rhcos_image_name_result
+
+- name: Set rhcos_image_name result as fact
+  set_fact:
+    openstack_rhcos_image_name: "{{ rhcos_image_name_result.openstack_image }}"
+
+- name: Verify if local RedHat CoreOS image file is provided
+  local_action: stat path="{{ rhcos_image_path }}"
+  register: rhcos_image_path_result
+
+- name: Fail if both OpenStack and local RedHat CoreOS images were not found
+  fail:
+    msg: "Could not find {{ rhcos_image_name }} on OpenStack, nor {{ rhcos_image_path }} locally!"
+  when: (openstack_rhcos_image_name == "") and (rhcos_image_path_result['stat']['exists'] != true)
 
