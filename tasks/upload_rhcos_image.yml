@@ -1,0 +1,10 @@
+---
+- name: Upload Red Hat CoreOS image to the OpenShift
+  os_image:
+    cloud: "{{ openstack_cloud_name }}"
+    name: "{{ rhcos_image_name }}"
+    container_format: bare
+    disk_format: qcow2
+    state: present
+    filename: "{{ rhcos_image_path }}"
+

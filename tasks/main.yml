@@ -2,3 +2,7 @@
 
 - name: import initial setup checks
   import_tasks: initial_checks.yml
+
+- name: import rhcos image upload
+  import_tasks: upload_rhcos_image.yml
+  when: openstack_rhcos_image_name == "" 

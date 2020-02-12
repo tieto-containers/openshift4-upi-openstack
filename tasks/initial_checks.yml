@@ -70,7 +70,7 @@
     msg: "Network (Subnet range) for OCP cluster is already taken, please choose different, or delete the current one."
   when: subnet_range_result.openstack_networks != []
 
-- name: Verify that RedHat CoreOS image is already uploaded to the OpenStack
+- name: Verify that Red Hat CoreOS image is already uploaded to the OpenStack
   os_image_info:
     image: "{{ rhcos_image_name }}"
   register: rhcos_image_name_result
@@ -79,11 +79,11 @@
   set_fact:
     openstack_rhcos_image_name: "{{ rhcos_image_name_result.openstack_image }}"
 
-- name: Verify if local RedHat CoreOS image file is provided
+- name: Verify if local Red Hat CoreOS image file is provided
   local_action: stat path="{{ rhcos_image_path }}"
   register: rhcos_image_path_result
 
-- name: Fail if both OpenStack and local RedHat CoreOS images were not found
+- name: Fail if both OpenStack and local Red Hat CoreOS images were not found
   fail:
     msg: "Could not find {{ rhcos_image_name }} on OpenStack, nor {{ rhcos_image_path }} locally!"
   when: (openstack_rhcos_image_name == "") and (rhcos_image_path_result['stat']['exists'] != true)
