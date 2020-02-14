@@ -1,0 +1,27 @@
+---
+- name: Create OCP4 network
+  os_network:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: "{{ os_network }}"
+
+- name: Create OCP4 subnet 
+  os_subnet:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: "{{ os_subnet }}"
+    network_name: "{{ os_network }}"
+    cidr: "{{ subnet_range }}"
+    dns_nameservers:
+      - 8.8.8.8
+      - 8.8.4.4
+    allocation_pool_start: "{{ subnet_range | next_nth_usable(10) }}"
+    allocation_pool_end: "{{ subnet_range | ipaddr('last_usable') }}"
+
+- name: Create external router
+  os_router:
+    cloud: "{{ openstack_cloud_name }}"    
+    name: "{{ os_external_router }}"
+    network: "{{ external_network }}"
+    interfaces:
+      - "{{ os_subnet }}"

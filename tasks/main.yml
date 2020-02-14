@@ -1,8 +1,20 @@
 ---
 
-- name: import initial setup checks
+- name: Import initial setup checks
   import_tasks: initial_checks.yml
 
-- name: import rhcos image upload
+- name: Import rhcos image upload
   import_tasks: upload_rhcos_image.yml
   when: openstack_rhcos_image_name == "" 
+
+- name: Import networking set facts playbook
+  import_tasks: networking_set_facts.yml
+
+- name: Import network topology playbook
+  import_tasks: create_network_topology.yml
+
+- name: Import security group playbook
+  import_tasks: create_security_groups.yml
+
+- name: Import fip's allocation tasks
+  import_tasks: allocate_floating_ips.yml

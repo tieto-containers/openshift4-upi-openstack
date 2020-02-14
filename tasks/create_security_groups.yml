@@ -1,0 +1,473 @@
+---
+- name: Create masters security group
+  os_security_group:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: "{{ os_master_secgrp }}"
+    description: security group for ocp4 master servers
+
+- name: Create nodes security group
+  os_security_group:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: "{{ os_worker_secgrp }}"
+    description: security group for ocp4 worker nodes
+
+# Master rules
+#
+#
+- name: Masters ICMP
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: icmp
+    state: present
+
+- name: Masters machine config server
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_ip_prefix: "{{ subnet_range }}"
+    port_range_min: 22623
+    port_range_max: 22623
+    state: present
+
+- name: Masters SSH
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    port_range_min: 22
+    port_range_max: 22
+    state: present
+
+- name: Masters DNS (TCP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_ip_prefix: "{{ subnet_range }}"
+    port_range_min: 53
+    port_range_max: 53
+    state: present
+
+- name: Masters DNS (UDP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_ip_prefix: "{{ subnet_range }}"
+    port_range_min: 53
+    port_range_max: 53
+    state: present
+
+- name: Masters mDNS
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_ip_prefix: "{{ subnet_range }}"
+    port_range_min: 5353
+    port_range_max: 5353
+    state: present
+
+- name: Masters OpenShift API
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    port_range_min: 6443
+    port_range_max: 6443
+    state: present
+
+- name: Masters VXLAN
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 4789
+    port_range_max: 4789
+    state: present
+
+- name: Masters VXLAN from worker
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 4789
+    port_range_max: 4789
+    state: present
+
+- name: Masters Geneve
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 6081
+    port_range_max: 6081
+    state: present
+
+- name: Masters Geneve from worker
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 6081
+    port_range_max: 6081
+    state: present
+
+- name: Masters ovndb
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 6641
+    port_range_max: 6642
+    state: present
+
+- name: Masters ovndb from worker
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 6641
+    port_range_max: 6642
+    state: present
+
+- name: Masters ingress internal (TCP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+- name: Masters ingress internal from worker (TCP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+- name: Masters ingress internal (UDP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+- name: Masters ingress internal from worker (UDP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+- name: Masters kube scheduler
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 10259
+    port_range_max: 10259
+    state: present
+
+- name: Masters kube scheduler from worker
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 10259
+    port_range_max: 10259
+    state: present
+
+- name: Masters kube controller manager
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 10257
+    port_range_max: 10257
+    state: present
+
+- name: Masters kube controller manager from worker
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 10257
+    port_range_max: 10257
+    state: present
+
+- name: Masters ingress kubelet secure
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 10250
+    port_range_max: 10250
+    state: present
+
+- name: Masters ingress kubelet secure from worker
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 10250
+    port_range_max: 10250
+    state: present
+
+- name: Masters etcd
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 2379
+    port_range_max: 2380
+    state: present
+
+
+- name: Masters ingress services (TCP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 30000
+    port_range_max: 32767
+    state: present
+
+- name: Masters ingress services (UDP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 30000
+    port_range_max: 32767
+    state: present
+
+
+- name: Masters VRRP
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_master_secgrp }}"
+    protocol: 112
+    remote_ip_prefix: "{{ subnet_range }}"
+  ignore_errors: true
+
+# Worker node rules
+#
+#
+- name: Workers ICMP
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: icmp
+    state: present
+
+
+- name: Worker SSH
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    port_range_min: 22
+    port_range_max: 22
+    state: present
+
+- name: Workers mDNS
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_ip_prefix: "{{ subnet_range }}"
+    port_range_min: 5353
+    port_range_max: 5353
+    state: present
+
+- name: Workers ingress HTTP
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    port_range_min: 80
+    port_range_max: 80
+    state: present
+
+- name: Workers ingress HTTPS
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    port_range_min: 443
+    port_range_max: 443
+    state: present
+
+- name: Workers router
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    remote_ip_prefix: "{{ subnet_range }}"
+    port_range_min: 1936
+    port_range_max: 1936
+    state: present
+
+
+- name: Workers VXLAN
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 4789
+    port_range_max: 4789
+    state: present
+
+- name: Workers VXLAN from master
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 4789
+    port_range_max: 4789
+    state: present
+
+- name: Workers Geneve
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 6081
+    port_range_max: 6081
+    state: present
+
+- name: Workers Geneve from master
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 6081
+    port_range_max: 6081
+    state: present
+
+- name: Workers ingress internal (TCP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+- name: Workers ingress internal from master (TCP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+
+- name: Workers ingress internal (UDP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+- name: Workers ingress internal from master (UDP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 9000
+    port_range_max: 9999
+    state: present
+
+- name: Workers ingress kubelet secure
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 10250
+    port_range_max: 10250
+    state: present
+
+- name: Workers ingress kubelet secure from master
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_master_secgrp }}"
+    port_range_min: 10250
+    port_range_max: 10250
+    state: present
+
+
+- name: Workers ingress services (TCP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: tcp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 30000
+    port_range_max: 32767
+    state: present
+
+- name: Workers ingress services (UDP)
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: udp
+    remote_group: "{{ os_worker_secgrp }}"
+    port_range_min: 30000
+    port_range_max: 32767
+    state: present
+
+- name: Workers VRRP
+  os_security_group_rule:
+    cloud: "{{ openstack_cloud_name }}"
+    security_group: "{{ os_worker_secgrp }}"
+    protocol: 112
+    remote_ip_prefix: "{{ subnet_range }}"
+    state: present
+  ignore_errors: true
+
