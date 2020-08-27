@@ -4,3 +4,13 @@
 
 - name:  Attach Ingress FIP to Ingress port 
   shell: "source openstack-rc.sh && openstack floating ip set --port {{ os_port_ingress }} {{ openshift_ingress_fip }}"
+
+- name: run modify_bootstrap_ign.py
+  local_action: shell cd "{{ openshift_upi_directory }}" && python modify_bootstrap_ign.py
+
+- name: run disable_afterburn_service.py
+  local_action: shell cd "{{ openshift_upi_directory }}" && python disable_afterburn_service.py
+
+- name: run update_master_ignition.sh
+  local_action: shell cd "{{ openshift_upi_directory }}" && /bin/bash update_master_ignition.sh
+

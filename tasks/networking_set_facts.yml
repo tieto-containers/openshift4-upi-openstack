@@ -26,3 +26,23 @@
 - name: Set os_port_ingress variable
   set_fact:
     os_port_ingress: "{{ openshift_cluster_id }}-ocp4-ingress-port"
+
+- name: Set os_port_bootstrap variable
+  set_fact:
+    os_port_bootstrap: "{{ openshift_cluster_id }}-ocp4-bootstrap-port"
+
+- name: Set os_port_master variable
+  set_fact:
+    os_port_master: "{{ openshift_cluster_id }}-ocp4-master-port"
+
+- name: Set os_port_worker variable
+  set_fact:
+    os_port_worker: "{{ openshift_cluster_id }}-ocp4-worker-port"
+
+- name: Set master server name
+  set_fact:
+    os_master_server_name: "{{ openshift_cluster_id }}-master"
+
+- name: Set worker server name
+  set_fact:
+    os_worker_server_name: "{{ openshift_cluster_id }}-worker"

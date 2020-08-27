@@ -1,0 +1,7 @@
+---
+- name: disable ipv6 in the kernel of masters
+  local_action: template src=cluster-kernel-masters.yaml.j2 dest="{{ openshift_upi_directory }}/manifests/cluster-kernel-masters.yaml" mode='0644'
+
+- name: disable ipv6 in the kernel of workers
+  local_action: template src=cluster-kernel-workers.yaml.j2 dest="{{ openshift_upi_directory }}/manifests/cluster-kernel-workers.yaml" mode='0644'
+

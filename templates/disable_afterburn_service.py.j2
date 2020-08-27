@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+#
+#  Copyright (C) 2020 Tieto Czech s.r.o.
+#  Lumir Jasiok
+#  lumir.jasiok@tieto.com
+#  http://www.tieto.com
+#
+#
+#
+import base64
+import json
+import os
+
+with open('master.ign', 'r') as f:
+    ignition = json.load(f)
+
+systemd = ignition['systemd']
+
+systemd['units'] = [{"contents":"[Unit]\nDescription=Afterburn Hostname\nBefore=kubelet.service\n\n[Service]\nExecStart=/usr/bin/afterburn --provider openstack-metadata --hostname=/etc/hostname\nType=oneshot\n\n[Install]\nWantedBy=multi-user.target\n","enabled": False,"name":"afterburn-hostname.service"}]
+
+ignition['systemd'] = systemd
+
+with open('master.ign', 'w') as f:
+    json.dump(ignition, f)

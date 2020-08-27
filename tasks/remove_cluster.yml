@@ -1,0 +1,69 @@
+---
+- name: Remove bootstrap server
+  os_server:
+    name: "{{ openshift_cluster_id }}-bootstrap"
+    state: absent
+
+- name: Remove control plane servers
+  os_server:
+    name: "{{ item.1 }}-{{ item.0 }}"
+    state: absent
+  with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
+
+- name: Remove bootstrap boot volume
+  os_volume:
+    state: absent
+    display_name: "{{ openshift_cluster_id }}-bootstrap-root"
+
+- name: Remove control plane servers boot volume
+  os_volume:
+    state: absent
+    display_name: "{{ item.1 }}-{{ item.0 }}-root"
+  with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
+
+- name: Remove external router
+  os_router:
+    name: "{{ os_external_router }}"
+    interfaces:
+      - "{{ os_subnet }}"
+
+- name: Delete bootstrap server port
+  os_port:
+    name: "{{ os_port_bootstrap }}"
+    state: absent
+
+- name: Remove control plane ports
+  os_port:
+    name: "{{ item.1 }}-{{ item.0 }}"
+    state: absent
+  with_indexed_items: "{{ [os_port_master] * control_plane_servers }}"
+
+- name: Delete API network port
+  os_port:
+    name: "{{ os_port_api }}"
+    state: absent
+
+- name: Delete Ingress network port
+  os_port:
+    name: "{{ os_port_ingress }}"
+    state: absent
+
+- name: Delete OCP4 subnet 
+  os_subnet:
+    name: "{{ os_subnet }}"
+    state: absent
+
+- name: Delete OCP4 network
+  os_network:
+    name: "{{ os_network }}"
+    state: present
+
+- name: Delete masters security group
+  os_security_group:
+    name: "{{ os_master_secgrp }}"
+    state: absent
+
+- name: Delete workers security group
+  os_security_group:
+    name: "{{ os_worker_secgrp }}"
+    state: absent

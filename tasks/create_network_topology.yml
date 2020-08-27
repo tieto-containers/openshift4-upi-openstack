@@ -12,9 +12,7 @@
     name: "{{ os_subnet }}"
     network_name: "{{ os_network }}"
     cidr: "{{ subnet_range }}"
-    dns_nameservers:
-      - 8.8.8.8
-      - 8.8.4.4
+    dns_nameservers: "{{ os_dns_servers }}"
     allocation_pool_start: "{{ subnet_range | next_nth_usable(10) }}"
     allocation_pool_end: "{{ subnet_range | ipaddr('last_usable') }}"
 
@@ -25,3 +23,13 @@
     network: "{{ external_network }}"
     interfaces:
       - "{{ os_subnet }}"
+
+- name: Create bootstrap server port
+  os_port:
+    name: "{{ os_port_bootstrap }}"
+    network: "{{ os_network }}"
+    security_groups:
+    - "{{ os_master_secgrp }}"
+    allowed_address_pairs:
+    - ip_address: "{{ subnet_range | next_nth_usable(5) }}"
+    - ip_address: "{{ subnet_range | next_nth_usable(6) }}"

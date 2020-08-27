@@ -1,18 +1,15 @@
 ---
-
 masters_flavor: "m1.xlarge"
 nodes_flavor:   "m1.large"
 coreos_image: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.3/4.3.0/rhcos-4.3.0-x86_64-openstack.qcow2.gz"
 external_network: "external-network"
 subnet_range: "192.0.2.0/24"
-allocation_pool_start: "192.0.2.10"
-allocation_pool_end: "192.0.2.254"
 cluster_name: "openshift4"
 base_domain: "example.com"
 openstack_cloud_name: "openstack"
-openshift_install_binary_path: "/usr/local/bin/openshift-install"
-rhcos_image_name: "rhcos"
-rhcos_image_path: "/tmp/rhcos-4.3.0-x86_64-openstack.qcow2"
-openshift_api_fips: "10.1.1.2"
-openshift_ingress_fips: "10.1.1.3"
-openshift_cluster_id: "knnzgou6"
+control_plane_servers: 3
+os_dns_servers: ['8.8.8.8', '8.8.4.4']
+openstack_boot_volume_name: "{{ inventory_hostname }}-root"
+openstack_boot_volume_size: 120
+openstack_boot_volume_type: performance
+REMOVE_OCP4_CLUSTER: false

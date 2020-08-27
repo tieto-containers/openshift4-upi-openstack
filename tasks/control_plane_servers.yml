@@ -1,0 +1,34 @@
+---
+- name: Create boot volume
+  os_volume:
+    state: present
+    size: "{{ openstack_boot_volume_size }}"
+    display_name: "{{ item.1 }}-{{ item.0 }}-root"
+    volume_type: "{{ openstack_boot_volume_type }}"
+    image: "{{ rhcos_image_name }}"
+  with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
+
+- name: Create control plane ports
+  os_port:
+    name: "{{ item.1 }}-{{ item.0 }}"
+    network: "{{ os_network }}"
+    security_groups:
+    - "{{ os_master_secgrp }}"
+    allowed_address_pairs:
+    - ip_address: "{{ subnet_range | next_nth_usable(5) }}"
+    - ip_address: "{{ subnet_range | next_nth_usable(6) }}"
+    - ip_address: "{{ subnet_range | next_nth_usable(7) }}"
+  with_indexed_items: "{{ [os_port_master] * control_plane_servers }}"
+
+- name: Create control plane servers
+  os_server:
+    name: "{{ item.1 }}-{{ item.0 }}"
+    boot_volume: "{{ item.1 }}-{{ item.0 }}-root"
+    flavor: "{{ masters_flavor }}"
+    auto_ip: no
+    userdata: "{{ lookup('file', openshift_upi_directory~'/'~item.1~'-'~item.0~'-ignition.json') | string }}"
+    nics:
+    - port-name: "{{ os_port_master }}-{{ item.0 }}"
+    meta:
+      hostname: "{{ item.1 }}-{{ item.0 }}"
+  with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"

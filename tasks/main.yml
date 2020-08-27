@@ -1,7 +1,9 @@
 ---
-
 - name: Import initial setup checks
   import_tasks: initial_checks.yml
+
+- name: Import openshift-installer playbook
+  import_tasks: openshift_installer.yml
 
 - name: Import rhcos image upload
   import_tasks: upload_rhcos_image.yml
@@ -10,11 +12,35 @@
 - name: Import networking set facts playbook
   import_tasks: networking_set_facts.yml
 
-- name: Import network topology playbook
-  import_tasks: create_network_topology.yml
+- name: Remove cluster
+  import_tasks: remove_cluster.yml
+  when: REMOVE_OCP4_CLUSTER
 
 - name: Import security group playbook
   import_tasks: create_security_groups.yml
+  when: not REMOVE_OCP4_CLUSTER
 
-- name: Import fip's allocation tasks
+- name: Import network topology playbook
+  import_tasks: create_network_topology.yml
+  when: not REMOVE_OCP4_CLUSTER
+
+- name: Import fip's allocation playbook
   import_tasks: allocate_floating_ips.yml
+  when: not REMOVE_OCP4_CLUSTER
+
+- name: Import bootstrap ignition playbook
+  import_tasks: bootstrap_tasks.yml
+  when: not REMOVE_OCP4_CLUSTER
+
+- name: Import bootstrap server playbook
+  import_tasks: bootstrap_server.yml
+  when: not REMOVE_OCP4_CLUSTER
+
+- name: "Wait for bootstrap server to prepare"
+  pause:
+    minutes: 4
+  when: not REMOVE_OCP4_CLUSTER
+
+- name: Import control plane playbook
+  import_tasks: control_plane_servers.yml
+  when: not REMOVE_OCP4_CLUSTER

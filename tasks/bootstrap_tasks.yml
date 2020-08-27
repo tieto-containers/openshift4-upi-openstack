@@ -1,0 +1,36 @@
+---
+- name: Deploy python script template to the localhost
+  local_action: template src=modify_bootstrap_ign.py.j2 dest="{{ openshift_upi_directory }}/modify_bootstrap_ign.py" mode='0755'
+  notify: run modify_bootstrap_ign.py
+
+- name: Deploy python script to disable afterburn-hostname.service 
+  local_action: template src=disable_afterburn_service.py.j2 dest="{{ openshift_upi_directory }}/disable_afterburn_service.py" mode='0755'
+  notify: run disable_afterburn_service.py
+
+- name: Deploy shell script template for master ignition update
+  local_action: template src=update_master_ignition.sh.j2 dest="{{ openshift_upi_directory }}/update_master_ignition.sh" mode='0755'
+  notify: run update_master_ignition.sh
+
+- name: Flush handlers
+  meta: flush_handlers
+
+- name: Upload bootstrap.ign to the Swift
+  os_object:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: bootstrap.ign
+    container: "{{ openshift_cluster_id }}"
+    filename: "{{ openshift_upi_directory }}/bootstrap.ign"
+    container_access: public
+
+- name: Get the swift URL
+  local_action: shell source openstack-rc.sh && swift stat -v | head -n 1 | cut -d ":" -f 2,3 | tr -d "[:space:]"
+  register: swift_url_reg
+
+- name: Set Bootstrap Ignition file URL fact
+  set_fact:
+    bootstrap_ignition_url: "{{ swift_url_reg.stdout }}/{{ openshift_cluster_id }}/bootstrap.ign"
+    os_bootstrap_ignition: "{{ openshift_upi_directory }}/{{ openshift_cluster_id }}-bootstrap-ignition.json"
+
+- name: Create Bootstrap Ignition Shim
+  local_action: template src=bootstrap-ignition.json.j2 dest="{{ os_bootstrap_ignition }}"

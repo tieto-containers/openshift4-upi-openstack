@@ -1,0 +1,29 @@
+---
+- name: Create boot volume
+  os_volume:
+    state: present
+    size: "{{ openstack_boot_volume_size }}"
+    display_name: "{{ openshift_cluster_id }}-bootstrap-root"
+    volume_type: "{{ openstack_boot_volume_type }}"
+    image: "{{ rhcos_image_name }}"
+
+- name: Create the bootstrap server
+  os_server:
+    name: "{{ openshift_cluster_id }}-bootstrap"
+    flavor: "{{ masters_flavor }}"
+    boot_volume: "{{ openshift_cluster_id }}-bootstrap-root"
+    userdata: "{{ lookup('file', os_bootstrap_ignition ) | string }}"
+    auto_ip: no
+    nics:
+    - port-name: "{{ os_port_bootstrap }}"
+    security_groups:
+      - "{{ os_master_secgrp }}"
+    meta:
+      hostname: "{{ openshift_cluster_id }}-bootstrap"
+
+- name: Attach FIP to the bootstrap server
+  os_floating_ip:
+    state: present
+    network: "{{ external_network }}"
+    server: "{{ openshift_cluster_id }}-bootstrap"
+

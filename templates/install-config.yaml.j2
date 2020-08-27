@@ -1,0 +1,37 @@
+apiVersion: v1
+baseDomain: {{ base_domain }}
+compute:
+- hyperthreading: Enabled
+  name: worker
+  platform: {}
+  replicas: 0
+controlPlane:
+  hyperthreading: Enabled
+  name: master
+  platform: {}
+  replicas: 3
+metadata:
+  creationTimestamp: null
+  name: {{ cluster_name }}
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
+  machineCIDR: {{ subnet_range }}
+  networkType: OpenShiftSDN
+  serviceNetwork:
+  - 172.30.0.0/16
+platform:
+  openstack:
+    cloud: {{ openstack_cloud_name }}
+    computeFlavor: {{ nodes_flavor }}
+    externalDNS: null
+    externalNetwork: {{ external_network }}
+    lbFloatingIP: {{ openshift_api_fip }}
+    octaviaSupport: "0"
+    region: ""
+    trunkSupport: "0"
+publish: External
+pullSecret: '{{ openshift_pull_secret }}'
+sshKey: |
+  {{ openshift_ssh_key }}
