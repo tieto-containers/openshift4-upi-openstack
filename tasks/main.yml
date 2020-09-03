@@ -14,33 +14,43 @@
 
 - name: Remove cluster
   import_tasks: remove_cluster.yml
-  when: REMOVE_OCP4_CLUSTER
+  when: REMOVE_OCP4_CLUSTER|bool
 
 - name: Import security group playbook
   import_tasks: create_security_groups.yml
-  when: not REMOVE_OCP4_CLUSTER
+  when: (not REMOVE_OCP4_CLUSTER|bool) or (SKIP_SECGROUP_PLAYBOOK|bool)
 
 - name: Import network topology playbook
   import_tasks: create_network_topology.yml
-  when: not REMOVE_OCP4_CLUSTER
+  when: not REMOVE_OCP4_CLUSTER|bool
 
 - name: Import fip's allocation playbook
   import_tasks: allocate_floating_ips.yml
-  when: not REMOVE_OCP4_CLUSTER
+  when: not REMOVE_OCP4_CLUSTER|bool
 
 - name: Import bootstrap ignition playbook
   import_tasks: bootstrap_tasks.yml
-  when: not REMOVE_OCP4_CLUSTER
+  when: not REMOVE_OCP4_CLUSTER|bool
 
 - name: Import bootstrap server playbook
   import_tasks: bootstrap_server.yml
-  when: not REMOVE_OCP4_CLUSTER
+  when: not REMOVE_OCP4_CLUSTER|bool
 
 - name: "Wait for bootstrap server to prepare"
   pause:
     minutes: 4
-  when: not REMOVE_OCP4_CLUSTER
+  when: not REMOVE_OCP4_CLUSTER|bool
 
 - name: Import control plane playbook
   import_tasks: control_plane_servers.yml
-  when: not REMOVE_OCP4_CLUSTER
+  when: not REMOVE_OCP4_CLUSTER|bool
+
+- name: "Wait for control server to finish installation"
+  pause:
+    minutes: 5
+  when: not REMOVE_OCP4_CLUSTER|bool
+
+#- name: Import loadbalancer playbook
+#  import_tasks: create_loadbalancers.yml
+#  when: not REMOVE_OCP4_CLUSTER|bool
+

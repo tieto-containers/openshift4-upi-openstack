@@ -21,11 +21,6 @@
     display_name: "{{ item.1 }}-{{ item.0 }}-root"
   with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
 
-- name: Remove external router
-  os_router:
-    name: "{{ os_external_router }}"
-    interfaces:
-      - "{{ os_subnet }}"
 
 - name: Delete bootstrap server port
   os_port:
@@ -48,6 +43,12 @@
     name: "{{ os_port_ingress }}"
     state: absent
 
+- name: Remove external router
+  os_router:
+    name: "{{ os_external_router }}"
+    interfaces:
+      - "{{ os_subnet }}"
+
 - name: Delete OCP4 subnet 
   os_subnet:
     name: "{{ os_subnet }}"
@@ -67,3 +68,4 @@
   os_security_group:
     name: "{{ os_worker_secgrp }}"
     state: absent
+

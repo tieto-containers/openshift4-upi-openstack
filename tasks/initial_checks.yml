@@ -51,14 +51,23 @@
     msg: "Network {{ external_network }} is not external!"
   when: openstack_external_network[0]['router:external'] != true
 
-- name: Verify that openshift-install binary is in-place
+- name: verify that openshift-install binary is in-place
   local_action: stat path="{{ openshift_install_binary_path }}"
   register: stat_openshift_install
+
+- name: verify that swift is in-place
+  local_action: stat path="{{ swift_binary_path }}"
+  register: stat_swift_binary
 
 - name: Fail when could not find openshift-install binary
   fail:
     msg: "Could not find openshift-install file in {{ openshift_install_binary_path }}!"
   when: stat_openshift_install['stat']['exists'] != true
+
+- name: Fail when cound not find swift binary
+  fail:
+    msg: "Could not find OpenStack Swift binary"
+  when: stat_swift_binary['stat']['exists'] != true
 
 - name: Verify that network (subnet range) is not already occupied
   os_networks_info:
@@ -80,11 +89,21 @@
     openstack_rhcos_image_name: "{{ rhcos_image_name_result.openstack_image }}"
 
 - name: Verify if local Red Hat CoreOS image file is provided
-  local_action: stat path="{{ rhcos_image_path }}"
-  register: rhcos_image_path_result
+  local_action: stat path="{{ rhcos_image_file }}"
+  register: rhcos_image_file_result
 
 - name: Fail if both OpenStack and local Red Hat CoreOS images were not found
   fail:
-    msg: "Could not find {{ rhcos_image_name }} on OpenStack, nor {{ rhcos_image_path }} locally!"
-  when: (openstack_rhcos_image_name == "") and (rhcos_image_path_result['stat']['exists'] != true)
+    msg: "Could not find {{ rhcos_image_name }} on OpenStack, nor {{ rhcos_image_file }} locally!"
+  when: (openstack_rhcos_image_name == "") and (rhcos_image_file_result['stat']['exists'] != true)
+
+- name: Upload the CoreOS image if it's present locally but not remotelly 
+  os_image:
+    name: rhcos
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    container_format: bare
+    disk_format: qcow2
+    filename: "{{ rhcos_image_file }}"
+  when: (openstack_rhcos_image_name == "") and (rhcos_image_file_result['stat']['exists'] == true)
 

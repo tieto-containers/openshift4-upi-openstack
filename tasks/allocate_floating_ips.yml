@@ -8,7 +8,6 @@
     fixed_ips:
       - subnet: "{{ os_subnet }}"
         ip_address: "{{ subnet_range | next_nth_usable(5) }}"
-  notify: Attach API FIP to API port
 
 - name: Create Ingress network port
   os_port:
@@ -19,5 +18,3 @@
     fixed_ips:
       - subnet: "{{ os_subnet }}"
         ip_address: "{{ subnet_range | next_nth_usable(7) }}"
-  notify: Attach Ingress FIP to Ingress port
-

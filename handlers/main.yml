@@ -1,10 +1,4 @@
 ---
-- name:  Attach API FIP to API port 
-  shell: "source openstack-rc.sh && openstack floating ip set --port {{ os_port_api }} {{ openshift_api_fip }}"
-
-- name:  Attach Ingress FIP to Ingress port 
-  shell: "source openstack-rc.sh && openstack floating ip set --port {{ os_port_ingress }} {{ openshift_ingress_fip }}"
-
 - name: run modify_bootstrap_ign.py
   local_action: shell cd "{{ openshift_upi_directory }}" && python modify_bootstrap_ign.py
 

@@ -6,5 +6,5 @@
     container_format: bare
     disk_format: qcow2
     state: present
-    filename: "{{ rhcos_image_path }}"
+    filename: "{{ rhcos_image_file }}"
 
