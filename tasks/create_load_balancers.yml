@@ -1,57 +1,108 @@
 ---
-# Workaround AKA "Wall of shame" implementation using neutron-client instead of ansible openstack loadblancer core module
+# Workaround AKA "Wall of shame" implementation using neutron-client via shell instead of ansible openstack loadblancer core module
+# which is not compatible with our version of OpenStack
 
 # Workflow:
+#
 # Verify neutron binary
-# get master nodes ip addresses
-# check if API lb exist or create it
-# TODO: Check if FIP address attached or create it
-# check if API listener exist or create it
-# check if API pool exist or create id
-# check if API pool members exist or create them
-# TODO: get worker nodes ip addresses
-# TODO: check if Ingress lb exist or create it
-# TODO: Check if FIP address attached or create it
-# TODO: check if Ingress listener exist or create it
-# TODO: check if Ingress pool exist or create id
-# TODO: check if Ingress pool members exist or create them
+# Get existing load balancers
+#
+# Get master nodes ip addresses for API
+# Get API FIP
+# Create API lb
+# Check if FIP address associated
+# Get API lb port ID
+# Associate API Floating IP to Virtual IP
+# Create API listener
+# Create API pool
+# Create API pool members
+# Create API listener health monitor
+#
+# Get master nodes ip addresses for Ingress
+# Get Ingress FIP
+# Create Ingress lb
+# Check if FIP address associated
+# Get Ingress lb port ID
+# Associate Ingress Floating IP to Virtual IP
+# Create Ingress listener
+# Create Ingress pool
+# Create Ingress pool members
+# Create Ingress listener health monitor
 
 # TODO: Facts manually set for testing/development. Some should be deleted, some should be loaded from inventory file or openstack metadata file
 - name: Set facts
   set_fact:
     neutron: "/Users/lukytop/tieto_repos/openshift-test.int.tieto.com/venv/bin/neutron"
     ocp_id: "ocp4-test-n7tcl-ocp4" #Should be set to {{ cluster_name }}?
-    lb_api_name: "lb_api"
-    lb_ingress_name: "lb_ingress"
-    lb_api_vip_address: "192.0.2.20"
-    lb_ingress_vip_address: "???"
     api_port: 6443
-    ingress_port: 443
+    lb_api_name: "lb_api"
+    lb_api_vip_address: "192.0.2.20"
+    lb_api_fip_address: "10.42.145.185"
     api_pool_members_exist: false
+    ingress_port: 443
+    lb_ingress_name: "lb_ingress"
+    lb_ingress_vip_address: "192.0.2.21"
+    lb_ingress_fip_address: "10.42.146.155"
+    ingress_pool_members_exist: false
 
+#
+# Common
+#
 - name: "Check neutron binary at {{ neutron }}"
   stat: path={{ neutron }}
   register: stat_neutron
 
-- fail:
+- name: Fail if neutron binary not found
+  fail:
     msg: "Neutron binary not found at {{ neutron }}!"
   when: stat_neutron.stat.exists == false
 
+- name: Get load balancer list
+  local_action: shell {{ neutron }} lbaas-loadbalancer-list -f json | jq -r '.[].name'
+  register: lb_list
+  check_mode: no
+
+#
+# API
+# 
 - name: Get master nodes ip addresses
   local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-master-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
   register: fixed_ip_masters
   loop: [0, 1, 2]
   check_mode: no
 
-- name: Check if API load balancer exists
-  local_action: shell {{ neutron }} lbaas-loadbalancer-list -f json | jq -r '.[].name'
-  register: lb_api_check
+- name: Get API Floating IP ID
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_api_fip_address }}\") | .id"
+  register: api_fip_id
   check_mode: no
+
+- name: Fail if API Floating IP not found
+  fail:
+    msg: "API Floating IP ({{ lb_api_fip_address }}) not found!"
+  when: api_fip_id.stdout == ""
 
 - name: Create API load balancer
   local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_api_name }} --description "API Load Balancer" --vip-address "{{ lb_api_vip_address }}" {{ ocp_id }}-nodes
-  register: lb_api_create
-  when: "\"{{ lb_api_name }}\" not in {{ lb_api_check.stdout_lines }}"
+  when: lb_api_name not in lb_list.stdout_lines
+
+- name: Check if API FIP ({{ lb_api_fip_address }}) has associated VIP
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_api_fip_address }}\") | .fixed_ip_address"
+  register: api_fip_to_vip_check
+  check_mode: no
+
+- name: Fail if API Floating IP already set to different Virtual IP
+  fail:
+    msg: "API Floating IP already set to different Virtual IP ({{ api_fip_to_vip_check.stdout }}) then requested ({{ lb_api_vip_address }})!"
+  when: api_fip_to_vip_check.stdout != "" and api_fip_to_vip_check.stdout != lb_api_vip_address
+
+- name: Get API load balancer port ID
+  local_action: shell {{ neutron }} lbaas-loadbalancer-show lb_api -f json | jq -r '.vip_port_id'
+  register: lb_api_port_id 
+  check_mode: no
+
+- name: Associate API Floating IP to Virtual IP
+  local_action: shell {{ neutron }} floatingip-associate {{ api_fip_id.stdout }} {{ lb_api_port_id.stdout }}
+  when: api_fip_to_vip_check.stdout == ""
 
 - name: Check if API listener exists
   local_action: shell {{ neutron }} lbaas-listener-list -f json | jq -r '.[].name'
@@ -60,7 +111,6 @@
 
 - name: Create API listener
   local_action: shell {{ neutron }} lbaas-listener-create -f yaml --name listener_api --loadbalancer {{ lb_api_name }} --protocol TCP --protocol-port {{ api_port }}
-  register: listener_api_create
   when: "'listener_api' not in {{ listener_api_check.stdout_lines }}"
 
 - name: Check if API pool exists
@@ -70,7 +120,6 @@
 
 - name: Create API pool
   local_action: shell {{ neutron }} lbaas-pool-create --name pool_api --lb-algorithm ROUND_ROBIN --protocol TCP --listener listener_api
-  register: pool_api_create_output
   when: "'pool_api' not in {{ pool_api_check.stdout_lines }}"
 
 - name: Check if API pool members exist
@@ -87,8 +136,101 @@
 
 - name: Create API pool members
   local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-nodes --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
-  register: member_api_create
   loop: "{{ fixed_ip_masters.results }}"
   when: api_pool_members_exist == false
 
-#TODO: Same as above for Inress
+- name: Get API listener health monitor
+  local_action: shell {{ neutron }} lbaas-pool-show pool_api -f json | jq -r ".healthmonitor_id"
+  register: listener_health_monitor_api
+
+# TODO: OMG WTF, Ansible struggles when handling string "null". Dirty workaround as that string has always length of 4
+- name: Create API listener health monitor
+  local_action: shell {{ neutron }} lbaas-healthmonitor-create  --pool pool_api --delay 5 --timeout 5 --max-retries 3 --type TCP
+  when: listener_health_monitor_api.stdout | length == 4
+
+#
+# Ingress
+#
+# TODO: Handle all worker nodes, not only firt three 
+- name: Get worker nodes ip addresses
+  local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-worker-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
+  register: fixed_ip_workers
+  loop: [0, 1, 2]
+  check_mode: no
+
+- name: Get Ingress Floating IP ID
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_ingress_fip_address }}\") | .id"
+  register: ingress_fip_id
+  check_mode: no
+
+- name: Fail if Ingress Floating IP not found
+  fail:
+    msg: "Ingress Floating IP ({{ lb_ingress_fip_address }}) not found!"
+  when: ingress_fip_id.stdout == ""
+
+- name: Create Ingress load balancer
+  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_ingress_name }} --description "Ingress Load Balancer" --vip-address "{{ lb_ingress_vip_address }}" {{ ocp_id }}-nodes
+  when: lb_ingress_name not in lb_list.stdout_lines
+
+- name: Check if Ingress FIP ({{ lb_ingress_fip_address }}) has associated VIP
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_ingress_fip_address }}\") | .fixed_ip_address"
+  register: ingress_fip_to_vip_check
+  check_mode: no
+
+- name: Fail if Ingress Floating IP already set to different Virtual IP
+  fail:
+    msg: "Ingress Floating IP already set to different Virtual IP ({{ ingress_fip_to_vip_check.stdout }}) then requested ({{ lb_ingress_vip_address }})!"
+  when: ingress_fip_to_vip_check.stdout != "" and ingress_fip_to_vip_check.stdout != lb_ingress_vip_address
+
+- name: Get Ingress load balancer port ID
+  local_action: shell {{ neutron }} lbaas-loadbalancer-show lb_ingress -f json | jq -r '.vip_port_id'
+  register: lb_ingress_port_id 
+  check_mode: no
+
+- name: Associate Ingress Floating IP to Virtual IP
+  local_action: shell {{ neutron }} floatingip-associate {{ ingress_fip_id.stdout }} {{ lb_ingress_port_id.stdout }}
+  when: ingress_fip_to_vip_check.stdout == ""
+
+- name: Check if Ingress listener exists
+  local_action: shell {{ neutron }} lbaas-listener-list -f json | jq -r '.[].name'
+  register: listener_ingress_check
+  check_mode: no
+
+- name: Create Ingress listener
+  local_action: shell {{ neutron }} lbaas-listener-create -f yaml --name listener_ingress --loadbalancer {{ lb_ingress_name }} --protocol TCP --protocol-port {{ ingress_port }}
+  when: "'listener_ingress' not in {{ listener_ingress_check.stdout_lines }}"
+
+- name: Check if Ingress pool exists
+  local_action: shell {{ neutron }} lbaas-pool-list -f json | jq -r '.[].name'
+  register: pool_ingress_check
+  check_mode: no
+
+- name: Create Ingress pool
+  local_action: shell {{ neutron }} lbaas-pool-create --name pool_ingress --lb-algorithm ROUND_ROBIN --protocol TCP --listener listener_ingress
+  when: "'pool_ingress' not in {{ pool_ingress_check.stdout_lines }}"
+
+- name: Check if Ingress pool members exist
+  local_action: shell {{ neutron }} lbaas-member-list pool_ingress -f json | jq -r '.[].address'
+  register: members_ingress_check
+  check_mode: no
+
+- name: Set Ingress pool members fact
+  set_fact:
+    ingress_pool_members_exist: true
+  loop: "{{ fixed_ip_workers.results }}"
+  when: item.stdout in members_ingress_check.stdout
+  check_mode: no
+
+- name: Create Ingress pool members
+  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-nodes --address {{ item.stdout }} --protocol-port {{ ingress_port }} pool_ingress
+  loop: "{{ fixed_ip_workers.results }}"
+  when: ingress_pool_members_exist == false
+
+- name: Get Ingress listener health monitor
+  local_action: shell {{ neutron }} lbaas-pool-show pool_ingress -f json | jq -r ".healthmonitor_id"
+  register: listener_health_monitor_ingress
+
+# TODO: OMG WTF, Ansible struggles when handling string "null". Dirty workaround as that string has always length of 4
+- name: Create Ingress listener health monitor
+  local_action: shell {{ neutron }} lbaas-healthmonitor-create  --pool pool_ingress --delay 5 --timeout 5 --max-retries 3 --type TCP
+  when: listener_health_monitor_ingress.stdout | length == 4
