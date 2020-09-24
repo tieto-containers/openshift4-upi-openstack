@@ -54,3 +54,6 @@
 #  import_tasks: create_loadbalancers.yml
 #  when: not REMOVE_OCP4_CLUSTER|bool
 
+- name: Import loadbalancer playbook
+  import_tasks: create_loadbalancers_workaround.yml
+  when: not REMOVE_OCP4_CLUSTER|bool
