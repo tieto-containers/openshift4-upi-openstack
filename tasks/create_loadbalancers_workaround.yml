@@ -32,17 +32,17 @@
 # TODO: Facts manually set for testing/development. Some should be deleted, some should be loaded from inventory file or openstack metadata file
 - name: Set facts
   set_fact:
-    neutron: "/Users/lukytop/tieto_repos/openshift-test.int.tieto.com/venv/bin/neutron"
+    neutron: "/Users/lukytop/tieto_repos/openshift-test.int.tieto.com/venv/bin/neutron" #Should be set in hosts [local:vars]
     ocp_id: "ocp4-test-n7tcl-ocp4" #Should be set to {{ cluster_name }}?
     api_port: 6443
     lb_api_name: "lb_api"
-    lb_api_vip_address: "192.0.2.20"
-    lb_api_fip_address: "10.42.145.185"
+    lb_api_vip_address: "192.0.2.20" # Should be loaded from {{ os_port_api }}
+    lb_api_fip_address: "10.42.145.185" #Should be set to {{ openshift_api_fip }}
     api_pool_members_exist: false
     ingress_port: 443
     lb_ingress_name: "lb_ingress"
-    lb_ingress_vip_address: "192.0.2.21"
-    lb_ingress_fip_address: "10.42.146.155"
+    lb_ingress_vip_address: "192.0.2.21" #Should be loaded from {{ os_port_ingress }}
+    lb_ingress_fip_address: "10.42.146.155" #Should be set to {{ openshift_ingress_fip }}
     ingress_pool_members_exist: false
 
 #
