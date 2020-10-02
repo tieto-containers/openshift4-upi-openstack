@@ -29,20 +29,22 @@
 # Create Ingress pool members
 # Create Ingress listener health monitor
 
-# TODO: Facts manually set for testing/development. Some should be deleted, some should be loaded from inventory file or openstack metadata file
+- name: Is neutron binary available?
+  shell: which neutron
+  register: reg_neutron_path
+
+
 - name: Set facts
   set_fact:
-    neutron: "/Users/lukytop/tieto_repos/openshift-test.int.tieto.com/venv/bin/neutron" #Should be set in hosts [local:vars]
-    ocp_id: "ocp4-test-n7tcl-ocp4" #Should be set to {{ cluster_name }}?
+    neutron: "{{ reg_neutron_path.stdout }}"
+    ocp_id: "{{ openshift_cluster_id }}"
     api_port: 6443
     lb_api_name: "lb_api"
-    lb_api_vip_address: "192.0.2.20" # Should be loaded from {{ os_port_api }}
-    lb_api_fip_address: "10.42.145.185" #Should be set to {{ openshift_api_fip }}
+    lb_api_vip_address: "{{ subnet_range | next_nth_usable(20) }}"
     api_pool_members_exist: false
     ingress_port: 443
     lb_ingress_name: "lb_ingress"
-    lb_ingress_vip_address: "192.0.2.21" #Should be loaded from {{ os_port_ingress }}
-    lb_ingress_fip_address: "10.42.146.155" #Should be set to {{ openshift_ingress_fip }}
+    lb_ingress_vip_address: "{{ subnet_range | next_nth_usable(21) }}"
     ingress_pool_members_exist: false
 
 #
@@ -66,7 +68,7 @@
 # API
 # 
 - name: Get master nodes ip addresses
-  local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-master-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
+  local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-ocp4-master-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
   register: fixed_ip_masters
   loop: [0, 1, 2]
   check_mode: no
@@ -82,7 +84,7 @@
   when: api_fip_id.stdout == ""
 
 - name: Create API load balancer
-  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_api_name }} --description "API Load Balancer" --vip-address "{{ lb_api_vip_address }}" {{ ocp_id }}-nodes
+  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_api_name }} --description "API Load Balancer" --vip-address "{{ lb_api_vip_address }}" {{ ocp_id }}-ocp4-nodes
   when: lb_api_name not in lb_list.stdout_lines
 
 - name: Check if API FIP ({{ lb_api_fip_address }}) has associated VIP
@@ -135,7 +137,7 @@
   check_mode: no
 
 - name: Create API pool members
-  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-nodes --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
+  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-ocp4-nodes --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
   loop: "{{ fixed_ip_masters.results }}"
   when: api_pool_members_exist == false
 
@@ -153,7 +155,7 @@
 #
 # TODO: Handle all worker nodes, not only firt three 
 - name: Get worker nodes ip addresses
-  local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-worker-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
+  local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-ocp4-worker-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
   register: fixed_ip_workers
   loop: [0, 1, 2]
   check_mode: no
@@ -169,7 +171,7 @@
   when: ingress_fip_id.stdout == ""
 
 - name: Create Ingress load balancer
-  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_ingress_name }} --description "Ingress Load Balancer" --vip-address "{{ lb_ingress_vip_address }}" {{ ocp_id }}-nodes
+  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_ingress_name }} --description "Ingress Load Balancer" --vip-address "{{ lb_ingress_vip_address }}" {{ ocp_id }}-ocp4-nodes
   when: lb_ingress_name not in lb_list.stdout_lines
 
 - name: Check if Ingress FIP ({{ lb_ingress_fip_address }}) has associated VIP
@@ -222,7 +224,7 @@
   check_mode: no
 
 - name: Create Ingress pool members
-  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-nodes --address {{ item.stdout }} --protocol-port {{ ingress_port }} pool_ingress
+  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-ocp4-nodes --address {{ item.stdout }} --protocol-port {{ ingress_port }} pool_ingress
   loop: "{{ fixed_ip_workers.results }}"
   when: ingress_pool_members_exist == false
 
