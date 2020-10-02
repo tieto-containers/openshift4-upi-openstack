@@ -1,0 +1,55 @@
+---
+# Code compatible with OpenStack Octavia implementation of lbaas
+- name: Create API loadbalancer
+  openstack.cloud.loadbalancer:
+    name: "lb-{{ cluster_name }}-api"
+    state: present
+    vip_subnet: "{{ os_subnet }}"
+    public_ip_address: "{{ openshift_api_fip }}"
+    listeners:
+      - name: "listener-api"
+        protocol: TCP
+        protocol_port: 6443
+        pool:
+          name: "pool-api"
+          protocol: TCP
+          members:
+            - name: "{{ cluster_name }}-master0"
+              address: "{{ subnet_range | next_nth_usable(11) }}"
+              protocol_port: 6443
+            - name: "{{ cluster_name }}-master1"
+              address: "{{ subnet_range | next_nth_usable(12) }}"
+              protocol_port: 6443
+            - name: "{{ cluster_name }}-master2"
+              address: "{{ subnet_range | next_nth_usable(13) }}"
+              protocol_port: 6443
+    wait: yes
+    timeout: 120
+
+- name: Create Ingress loadbalancer
+  openstack.cloud.loadbalancer:
+    name: "lb-{{ cluster_name }}-ingress"
+    state: present
+    vip_subnet: "{{ os_subnet }}"
+    public_ip_address: "{{ openshift_ingress_fip }}"
+    listeners:
+      - name: "listener-ingress"
+        protocol: TCP
+        protocol_port: 443
+        pool:
+          name: "pool-ingress"
+          protocol: TCP
+          members:
+            - name: "{{ cluster_name }}-worker0"
+              address: "{{ subnet_range | next_nth_usable(14) }}"
+              protocol_port: 443
+            - name: "{{ cluster_name }}-worker1"
+              address: "{{ subnet_range | next_nth_usable(15) }}"
+              protocol_port: 443
+            - name: "{{ cluster_name }}-worker2"
+              address: "{{ subnet_range | next_nth_usable(16) }}"
+              protocol_port: 443
+    wait: yes
+    timeout: 120
+
+

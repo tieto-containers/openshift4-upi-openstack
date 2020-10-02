@@ -51,9 +51,9 @@
   when: not REMOVE_OCP4_CLUSTER|bool
 
 #- name: Import loadbalancer playbook
-#  import_tasks: create_loadbalancers.yml
+#  import_tasks: create_loadbalancers_octavia.yml
 #  when: not REMOVE_OCP4_CLUSTER|bool
 
 - name: Import loadbalancer playbook
-  import_tasks: create_loadbalancers_workaround.yml
+  import_tasks: create_loadbalancers.yml
   when: not REMOVE_OCP4_CLUSTER|bool
