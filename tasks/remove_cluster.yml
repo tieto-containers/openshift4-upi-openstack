@@ -4,6 +4,13 @@
     name: "{{ openshift_cluster_id }}-bootstrap"
     state: absent
 
+- name: Remove compute nodes
+  os_server:
+    name: "{{ item.1 }}-{{ item.0 }}"
+    state: absent
+  with_indexed_items: "{{ [os_worker_server_name] * compute_node_servers }}"
+
+
 - name: Remove control plane servers
   os_server:
     name: "{{ item.1 }}-{{ item.0 }}"
@@ -48,6 +55,22 @@
     name: "{{ os_external_router }}"
     interfaces:
       - "{{ os_subnet }}"
+    state: absent
+  ignore_errors: True
+
+- name: Remove loadbalancers 
+  import_tasks: remove_loadbalancers.yml
+
+- name: Get all ports
+  os_port_info:
+    cloud: "{{ openstack_cloud_name }}"
+  register: available_ports
+
+- name: Delete all ports
+  os_port:
+    state: absent
+    name: "{{ item.name }}"
+  loop: "{{ available_ports.openstack_ports }}"
 
 - name: Delete OCP4 subnet 
   os_subnet:
@@ -57,7 +80,7 @@
 - name: Delete OCP4 network
   os_network:
     name: "{{ os_network }}"
-    state: present
+    state: absent
 
 - name: Delete masters security group
   os_security_group:

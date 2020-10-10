@@ -1,0 +1,147 @@
+---
+# Workaround code using neutron-client via shell instead of ansible openstack loadblancer core module,
+# which is compatible only with OpenStack Octavia lbaas implementation
+
+# Workflow:
+#
+# Verify neutron binary
+# Get existing load balancers
+#
+# Get master nodes ip addresses for API
+# Get API FIP
+# Create API lb
+# Check if FIP address associated
+# Get API lb port ID
+# Associate API Floating IP to Virtual IP
+# Create API listener
+# Create API pool
+# Create API pool members
+# Create API listener health monitor
+#
+# Get master nodes ip addresses for Ingress
+# Get Ingress FIP
+# Create Ingress lb
+# Check if FIP address associated
+# Get Ingress lb port ID
+# Associate Ingress Floating IP to Virtual IP
+# Create Ingress listener
+# Create Ingress pool
+# Create Ingress pool members
+# Create Ingress listener health monitor
+
+- name: Is neutron binary available?
+  shell: which neutron
+  register: reg_neutron_path
+
+- name: Set facts
+  set_fact:
+    neutron: "{{ reg_neutron_path.stdout }}"
+    ocp_id: "{{ openshift_cluster_id }}"
+    api_port: 6443
+    lb_api_name: "lb_api"
+    lb_api_vip_address: "{{ subnet_range | next_nth_usable(20) }}"
+    api_pool_members_exist: false
+    ingress_port: 443
+    lb_ingress_name: "lb_ingress"
+    lb_ingress_vip_address: "{{ subnet_range | next_nth_usable(21) }}"
+    ingress_pool_members_exist: false
+
+- name: "Check neutron binary at {{ neutron }}"
+  stat: path={{ neutron }}
+  register: stat_neutron
+
+- name: Fail if neutron binary not found
+  fail:
+    msg: "Neutron binary not found at {{ neutron }}!"
+  when: stat_neutron.stat.exists == false
+
+- name: Get load balancer list
+  local_action: shell {{ neutron }} lbaas-loadbalancer-list -f json | jq -r '.[].name'
+  register: lb_list
+  check_mode: no
+
+#
+# API
+# 
+- name: Get master nodes ip addresses
+  local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-ocp4-master-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
+  register: fixed_ip_masters
+  loop: [0, 1, 2]
+  check_mode: no
+
+- name: Get API Floating IP ID
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_api_fip_address }}\") | .id"
+  register: api_fip_id
+  check_mode: no
+
+- name: Fail if API Floating IP not found
+  fail:
+    msg: "API Floating IP ({{ lb_api_fip_address }}) not found!"
+  when: api_fip_id.stdout == ""
+
+- name: Create API load balancer
+  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_api_name }} --description "API Load Balancer" --vip-address "{{ lb_api_vip_address }}" {{ ocp_id }}-ocp4-nodes
+  when: lb_api_name not in lb_list.stdout_lines
+
+- name: Check if API FIP ({{ lb_api_fip_address }}) has associated VIP
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_api_fip_address }}\") | .fixed_ip_address"
+  register: api_fip_to_vip_check
+  check_mode: no
+
+- name: Fail if API Floating IP already set to different Virtual IP
+  fail:
+    msg: "API Floating IP already set to different Virtual IP ({{ api_fip_to_vip_check.stdout }}) then requested ({{ lb_api_vip_address }})!"
+  when: api_fip_to_vip_check.stdout != "" and api_fip_to_vip_check.stdout != lb_api_vip_address
+
+- name: Get API load balancer port ID
+  local_action: shell {{ neutron }} lbaas-loadbalancer-show lb_api -f json | jq -r '.vip_port_id'
+  register: lb_api_port_id 
+  check_mode: no
+
+- name: Associate API Floating IP to Virtual IP
+  local_action: shell {{ neutron }} floatingip-associate {{ api_fip_id.stdout }} {{ lb_api_port_id.stdout }}
+  when: api_fip_to_vip_check.stdout == ""
+
+- name: Check if API listener exists
+  local_action: shell {{ neutron }} lbaas-listener-list -f json | jq -r '.[].name'
+  register: listener_api_check
+  check_mode: no
+
+- name: Create API listener
+  local_action: shell {{ neutron }} lbaas-listener-create -f yaml --name listener_api --loadbalancer {{ lb_api_name }} --protocol TCP --protocol-port {{ api_port }}
+  when: "'listener_api' not in {{ listener_api_check.stdout_lines }}"
+
+- name: Check if API pool exists
+  local_action: shell {{ neutron }} lbaas-pool-list -f json | jq -r '.[].name'
+  register: pool_api_check
+  check_mode: no
+
+- name: Create API pool
+  local_action: shell {{ neutron }} lbaas-pool-create --name pool_api --lb-algorithm ROUND_ROBIN --protocol TCP --listener listener_api
+  when: "'pool_api' not in {{ pool_api_check.stdout_lines }}"
+
+- name: Check if API pool members exist
+  local_action: shell {{ neutron }} lbaas-member-list pool_api -f json | jq -r '.[].address'
+  register: members_api_check
+  check_mode: no
+
+- name: Set API pool members fact
+  set_fact:
+    api_pool_members_exist: true
+  loop: "{{ fixed_ip_masters.results }}"
+  when: item.stdout in members_api_check.stdout
+  check_mode: no
+
+- name: Create API pool members
+  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-ocp4-nodes --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
+  loop: "{{ fixed_ip_masters.results }}"
+  when: api_pool_members_exist == false
+
+- name: Get API listener health monitor
+  local_action: shell {{ neutron }} lbaas-pool-show pool_api -f json | jq -r ".healthmonitor_id"
+  register: listener_health_monitor_api
+
+- name: Create API listener health monitor
+  local_action: shell {{ neutron }} lbaas-healthmonitor-create  --pool pool_api --delay 5 --timeout 5 --max-retries 3 --type TCP
+  when: listener_health_monitor_api.stdout == "null"
+

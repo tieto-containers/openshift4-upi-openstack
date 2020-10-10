@@ -24,12 +24,23 @@
     container_access: public
 
 - name: Get the swift URL
-  local_action: shell source openstack-rc.sh && swift stat -v | head -n 1 | cut -d ":" -f 2,3 | tr -d "[:space:]"
+  local_action: shell swift stat -v | head -n 1 | cut -d ":" -f 2,3 | tr -d "[:space:]"
+  environment:
+    OS_AUTH_URL: "{{ OS_AUTH_URL }}"
+    OS_PROJECT_ID: "{{ OS_PROJECT_ID }}"
+    OS_PROJECT_NAME: "{{ OS_PROJECT_NAME }}"
+    OS_USER_DOMAIN_NAME: "{{ OS_USER_DOMAIN_NAME }}"
+    OS_PROJECT_DOMAIN_ID: "{{ OS_PROJECT_DOMAIN_ID }}"
+    OS_USERNAME: "{{ OS_USERNAME }}"
+    OS_PASSWORD: "{{ OS_PASSWORD }}"
+    OS_REGION_NAME: "{{ OS_REGION_NAME }}"
+    OS_IDENTITY_API_VERSION: "{{ OS_IDENTITY_API_VERSION }}"
   register: swift_url_reg
 
 - name: Set Bootstrap Ignition file URL fact
   set_fact:
     bootstrap_ignition_url: "{{ swift_url_reg.stdout }}/{{ openshift_cluster_id }}/bootstrap.ign"
+    worker_ignition_url: "{{ swift_url_reg.stdout }}/{{ openshift_cluster_id }}/worker.ign"
     os_bootstrap_ignition: "{{ openshift_upi_directory }}/{{ openshift_cluster_id }}-bootstrap-ignition.json"
 
 - name: Create Bootstrap Ignition Shim

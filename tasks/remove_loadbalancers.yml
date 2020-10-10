@@ -1,0 +1,95 @@
+---
+- name: Is neutron binary available?
+  shell: which neutron
+  register: reg_neutron_path
+
+- name: Set facts
+  set_fact:
+    neutron: "{{ reg_neutron_path.stdout }}"
+    ocp_id: "{{ openshift_cluster_id }}"
+    api_port: 6443
+    lb_api_name: "lb_api"
+    lb_api_vip_address: "{{ subnet_range | next_nth_usable(20) }}"
+    api_pool_members_exist: false
+    ingress_port: 443
+    lb_ingress_name: "lb_ingress"
+    lb_ingress_vip_address: "{{ subnet_range | next_nth_usable(21) }}"
+    ingress_pool_members_exist: false
+
+- name: "Check neutron binary at {{ neutron }}"
+  stat: path={{ neutron }}
+  register: stat_neutron
+
+- name: Fail if neutron binary not found
+  fail:
+    msg: "Neutron binary not found at {{ neutron }}!"
+  when: stat_neutron.stat.exists == false
+
+- name: Get the list of healt monitors
+  local_action: shell {{ neutron }} lbaas-healthmonitor-list -f json | jq -r '.[].id'
+  register: hm_list
+  check_mode: no
+
+- name: Delete healt monitors
+  local_action: shell {{ neutron }} lbaas-healthmonitor-delete {{ item }}
+  loop: "{{ hm_list.stdout_lines }}"
+
+- name: Get the list of pools
+  local_action: shell {{ neutron }} lbaas-pool-list -f json | jq -r '.[].id'
+  register: pool_list
+  check_mode: no
+
+- name: Get the members of pool_api
+  local_action: shell {{ neutron }} lbaas-member-list pool_api -f json | jq -r '.[].id'
+  register: api_member_list
+  check_mode: no
+
+- name: Delete api pool members
+  local_action: shell {{ neutron }} lbaas-member-delete {{ item }} pool_api
+  loop: "{{ api_member_list.stdout_lines }}"
+  ignore_errors: True
+
+- name: Get the members of pool_ingress
+  local_action: shell {{ neutron }} lbaas-member-list pool_ingress -f json | jq -r '.[].id'
+  register: ingress_member_list
+  check_mode: no
+
+- name: Delete  pool members
+  local_action: shell {{ neutron }} lbaas-member-delete {{ item }} pool_ingress
+  loop: "{{ ingress_member_list.stdout_lines }}"
+  ignore_errors: True
+
+- name: Delete pools
+  local_action: shell {{ neutron }} lbaas-pool-delete {{ item }}
+  loop: "{{ pool_list.stdout_lines }}"
+
+- name: Get API FIP ID
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_api_fip_address }}\") | .id"
+  register: api_fip_id
+
+- name: Disassociate API FIP address
+  local_action: shell {{ neutron }} floatingip-disassociate {{ api_fip_id.stdout }}
+
+- name: Get Ingress FIP ID
+  local_action: shell {{ neutron }} floatingip-list -f json | jq -r ".[] | select(.floating_ip_address==\"{{ lb_ingress_fip_address }}\") | .id"
+  register: ingress_fip_id
+
+- name: Disassociate Ingress FIP address
+  local_action: shell {{ neutron }} floatingip-disassociate {{ ingress_fip_id.stdout }}
+
+- name: Get the list of listeners
+  local_action: shell {{ neutron }} lbaas-listener-list -f json | jq -r ".[].id" 
+  register: list_of_listeners
+
+- name: Delete all listeners
+  local_action: shell {{ neutron }} lbaas-listener-delete {{ item }}
+  loop: "{{ list_of_listeners.stdout_lines }}"
+
+- name: Get the list of loadbalancers 
+  local_action: shell {{ neutron }} lbaas-loadbalancer-list -f json | jq -r ".[].id"
+  register: list_of_lb
+
+- name: Delete all loadbalancers
+  local_action: shell {{ neutron }} lbaas-loadbalancer-delete {{ item }}
+  loop: "{{ list_of_lb.stdout_lines }}"
+

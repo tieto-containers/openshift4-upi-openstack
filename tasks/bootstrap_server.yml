@@ -13,6 +13,7 @@
     flavor: "{{ masters_flavor }}"
     boot_volume: "{{ openshift_cluster_id }}-bootstrap-root"
     userdata: "{{ lookup('file', os_bootstrap_ignition ) | string }}"
+    terminate_volume: yes
     auto_ip: no
     nics:
     - port-name: "{{ os_port_bootstrap }}"

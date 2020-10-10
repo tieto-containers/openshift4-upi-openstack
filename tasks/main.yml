@@ -18,7 +18,7 @@
 
 - name: Import security group playbook
   import_tasks: create_security_groups.yml
-  when: (not REMOVE_OCP4_CLUSTER|bool) or (SKIP_SECGROUP_PLAYBOOK|bool)
+  when: not REMOVE_OCP4_CLUSTER|bool
 
 - name: Import network topology playbook
   import_tasks: create_network_topology.yml
@@ -45,11 +45,29 @@
   import_tasks: control_plane_servers.yml
   when: not REMOVE_OCP4_CLUSTER|bool
 
-- name: "Wait for control server to finish installation"
-  pause:
-    minutes: 5
+- name: "Create API load balancer"
+  import_tasks: create_api_loadbalancer.yml
   when: not REMOVE_OCP4_CLUSTER|bool
 
-- name: Import loadbalancer playbook
-  import_tasks: create_loadbalancers.yml
+- name: "Wait for control server to finish installation"
+  pause:
+    minutes: 8
   when: not REMOVE_OCP4_CLUSTER|bool
+
+- name: "Remove Bootstrap server"
+  import_tasks: remove_bootstrap_server.yml
+  when: not REMOVE_OCP4_CLUSTER|bool
+
+- name: "Wait for master servers to take over Bootstrap server"
+  pause:
+    minutes: 1
+  when: not REMOVE_OCP4_CLUSTER|bool
+
+- name: "Create compute nodes"
+  import_tasks: create_compute_nodes.yml
+  when: not REMOVE_OCP4_CLUSTER|bool
+
+- name: "Create Ingress load balancer"
+  import_tasks: create_ingress_loadbalancer.yml
+  when: not REMOVE_OCP4_CLUSTER|bool
+

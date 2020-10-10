@@ -1,0 +1,5 @@
+---
+- name: Remove bootstrap server
+  os_server:
+    name: "{{ openshift_cluster_id }}-bootstrap"
+    state: absent
