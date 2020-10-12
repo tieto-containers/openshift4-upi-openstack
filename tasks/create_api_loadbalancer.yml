@@ -64,7 +64,7 @@
 # API
 # 
 - name: Get master nodes ip addresses
-  local_action: shell {{ neutron }} port-show -f json {{ ocp_id }}-ocp4-master-port-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
+  local_action: shell {{ neutron }} port-show -f json {{ os_port_master }}-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
   register: fixed_ip_masters
   loop: [0, 1, 2]
   check_mode: no
@@ -80,7 +80,7 @@
   when: api_fip_id.stdout == ""
 
 - name: Create API load balancer
-  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_api_name }} --description "API Load Balancer" --vip-address "{{ lb_api_vip_address }}" {{ ocp_id }}-ocp4-nodes
+  local_action: shell {{ neutron }} lbaas-loadbalancer-create --name {{ lb_api_name }} --description "API Load Balancer" --vip-address "{{ lb_api_vip_address }}" {{ os_subnet }}
   when: lb_api_name not in lb_list.stdout_lines
 
 - name: Check if API FIP ({{ lb_api_fip_address }}) has associated VIP
@@ -133,7 +133,7 @@
   check_mode: no
 
 - name: Create API pool members
-  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_id }}-ocp4-nodes --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
+  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_subnet }}  --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
   loop: "{{ fixed_ip_masters.results }}"
   when: api_pool_members_exist == false
 

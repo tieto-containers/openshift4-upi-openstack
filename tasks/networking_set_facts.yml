@@ -1,43 +1,43 @@
 ---
 - name: Set os_network variable
   set_fact:
-    os_network: "{{ openshift_cluster_id }}-ocp4-network"
+    os_network: "{{ openshift_cluster_id }}-network"
 
 - name: Set os_subnet variable
   set_fact:
-    os_subnet: "{{ openshift_cluster_id }}-ocp4-nodes"
+    os_subnet: "{{ openshift_cluster_id }}-nodes"
 
 - name: Set os_external_router variable
   set_fact:
-    os_external_router: "{{ openshift_cluster_id }}-ocp4-router"
+    os_external_router: "{{ openshift_cluster_id }}-router"
 
 - name: Set os_master_secgrp variable
   set_fact:
-    os_master_secgrp: "{{ openshift_cluster_id }}-ocp4-master"
+    os_master_secgrp: "{{ openshift_cluster_id }}-master"
 
 - name: Set os_worker_secgrp variable
   set_fact:
-    os_worker_secgrp: "{{ openshift_cluster_id }}-ocp4-worker"
+    os_worker_secgrp: "{{ openshift_cluster_id }}-worker"
 
 - name: Set os_port_api variable
   set_fact:
-    os_port_api: "{{ openshift_cluster_id }}-ocp4-api-port"
+    os_port_api: "{{ openshift_cluster_id }}-api-port"
 
 - name: Set os_port_ingress variable
   set_fact:
-    os_port_ingress: "{{ openshift_cluster_id }}-ocp4-ingress-port"
+    os_port_ingress: "{{ openshift_cluster_id }}-ingress-port"
 
 - name: Set os_port_bootstrap variable
   set_fact:
-    os_port_bootstrap: "{{ openshift_cluster_id }}-ocp4-bootstrap-port"
+    os_port_bootstrap: "{{ openshift_cluster_id }}-bootstrap-port"
 
 - name: Set os_port_master variable
   set_fact:
-    os_port_master: "{{ openshift_cluster_id }}-ocp4-master-port"
+    os_port_master: "{{ openshift_cluster_id }}-master-port"
 
 - name: Set os_port_worker variable
   set_fact:
-    os_port_worker: "{{ openshift_cluster_id }}-ocp4-worker-port"
+    os_port_worker: "{{ openshift_cluster_id }}-worker-port"
 
 - name: Set master server name
   set_fact:
