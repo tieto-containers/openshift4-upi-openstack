@@ -133,7 +133,7 @@
   check_mode: no
 
 - name: Create API pool members
-  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ ocp_subnet }}  --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
+  local_action: shell {{ neutron }} lbaas-member-create -f yaml --weight 1 --subnet {{ os_subnet }}  --address {{ item.stdout }} --protocol-port {{ api_port }} pool_api
   loop: "{{ fixed_ip_masters.results }}"
   when: api_pool_members_exist == false
 
