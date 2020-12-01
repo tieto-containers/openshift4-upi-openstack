@@ -1,6 +1,7 @@
 ---
 - name: Import initial setup checks
   import_tasks: initial_checks.yml
+  check_mode: no
 
 - name: Import openshift-installer playbook
   import_tasks: openshift_installer.yml
