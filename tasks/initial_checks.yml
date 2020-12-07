@@ -51,11 +51,11 @@
     msg: "Network {{ external_network }} is not external!"
   when: openstack_external_network[0]['router:external'] != true
 
-- name: verify that openshift-install binary is in-place
+- name: Verify that openshift-install binary is in-place
   local_action: stat path="{{ openshift_install_binary_path }}"
   register: stat_openshift_install
 
-- name: verify that swift is in-place
+- name: Verify that swift is in-place
   local_action: stat path="{{ swift_binary_path }}"
   register: stat_swift_binary
 
@@ -69,15 +69,17 @@
     msg: "Could not find OpenStack Swift binary"
   when: stat_swift_binary['stat']['exists'] != true
 
-- name: Verify that network (subnet range) is not already occupied
+- name: Verify if subnet_range network exists
   os_networks_info:
     name: "{{ subnet_range }}"
   register: subnet_range_result
 
 - name: Fail if network (subnet range) does exists already
   fail:
-    msg: "Network (Subnet range) for OCP cluster is already taken, please choose different, or delete the current one."
-  when: subnet_range_result.openstack_networks != []
+    msg: "Network (Subnet range) for OCP cluster is already taken, please choose different, or specify variable use_existing_subnet_range"
+  when:
+    - subnet_range_result.openstack_networks != []
+    - use_existing_subnet_range is not defined 
 
 - name: Verify that Red Hat CoreOS image is already uploaded to the OpenStack
   os_image_info:
