@@ -1,5 +1,11 @@
 apiVersion: v1
 baseDomain: {{ base_domain }}
+{% if openshift_http_proxy is defined %}
+proxy:
+  httpProxy: {{ openshift_http_proxy }}
+  httpsProxy: {{ openshift_https_proxy }}
+  noProxy: {{ openshift_no_proxy }}
+{% endif %}
 compute:
 - hyperthreading: Enabled
   name: worker
@@ -15,19 +21,19 @@ metadata:
   name: {{ cluster_name }}
 networking:
   clusterNetwork:
-  - cidr: 10.128.0.0/14
+  - cidr: {{ openshift_cluster_network | default('10.128.0.0/14') }}
     hostPrefix: 23
   machineCIDR: {{ subnet_range }}
   networkType: OpenShiftSDN
   serviceNetwork:
-  - 172.30.0.0/16
+  - {{ openshift_service_network | default ('172.30.0.0/16') }}
 platform:
   openstack:
     cloud: {{ openstack_cloud_name }}
     computeFlavor: {{ nodes_flavor }}
     externalDNS: null
     externalNetwork: {{ external_network }}
-    lbFloatingIP: {{ openshift_api_fip }}
+    lbFloatingIP: {{ openshift_api_fip | default(openshift_api_vip) }}
     octaviaSupport: "0"
     region: ""
     trunkSupport: "0"

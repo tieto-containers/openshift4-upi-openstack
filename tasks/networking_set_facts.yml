@@ -1,11 +1,11 @@
 ---
 - name: Set os_network variable
   set_fact:
-    os_network: "{{ openshift_cluster_id }}-network"
+    os_network: "{{ openshift_network | default(openshift_cluster_id + '-network') }}"
 
 - name: Set os_subnet variable
   set_fact:
-    os_subnet: "{{ openshift_cluster_id }}-nodes"
+    os_subnet: "{{ openshift_subnet | default(openshift_cluster_id + '-nodes') }}"
 
 - name: Set os_external_router variable
   set_fact:

@@ -15,6 +15,8 @@
     dns_nameservers: "{{ os_dns_servers }}"
     allocation_pool_start: "{{ subnet_range | next_nth_usable(10) }}"
     allocation_pool_end: "{{ subnet_range | ipaddr('last_usable') }}"
+  when:
+    - skip_openshift_subnet_creation is not defined
 
 - name: Create external router
   os_router:
@@ -23,8 +25,11 @@
     network: "{{ external_network }}"
     interfaces:
       - "{{ os_subnet }}"
+  when:
+    - skip_external_router_creation is not defined
 
 - name: Create bootstrap server port
+  ignore_errors: True
   os_port:
     name: "{{ os_port_bootstrap }}"
     network: "{{ os_network }}"
@@ -33,3 +38,6 @@
     allowed_address_pairs:
     - ip_address: "{{ subnet_range | next_nth_usable(5) }}"
     - ip_address: "{{ subnet_range | next_nth_usable(6) }}"
+    fixed_ips:
+      - subnet: "{{ os_subnet }}"
+        ip_address: "{{ subnet_range | next_nth_usable(8) }}"

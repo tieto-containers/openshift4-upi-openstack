@@ -6,6 +6,7 @@
     display_name: "{{ openshift_cluster_id }}-bootstrap-root"
     volume_type: "{{ openstack_boot_volume_type }}"
     image: "{{ rhcos_image_name }}"
+    bootable: yes
 
 - name: Create the bootstrap server
   os_server:
@@ -27,4 +28,5 @@
     state: present
     network: "{{ external_network }}"
     server: "{{ openshift_cluster_id }}-bootstrap"
-
+  when:
+    - skip_attaching_bootstrap_fip is not defined

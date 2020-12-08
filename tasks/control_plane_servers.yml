@@ -6,9 +6,11 @@
     display_name: "{{ item.1 }}-{{ item.0 }}-root"
     volume_type: "{{ openstack_boot_volume_type }}"
     image: "{{ rhcos_image_name }}"
+    bootable: yes
   with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
 
 - name: Create control plane ports
+  ignore_errors: True
   os_port:
     name: "{{ item.1 }}-{{ item.0 }}"
     network: "{{ os_network }}"

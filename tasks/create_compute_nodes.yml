@@ -9,6 +9,7 @@
 
 
 - name: Create compute node ports
+  ignore_errors: True
   os_port:
     name: "{{ item.1 }}-{{ item.0 }}"
     network: "{{ os_network }}"
@@ -25,6 +26,7 @@
     display_name: "{{ item.1 }}-{{ item.0 }}-root"
     volume_type: "{{ openstack_boot_volume_type }}"
     image: "{{ rhcos_image_name }}"
+    bootable: yes
   with_indexed_items: "{{ [os_worker_server_name] * compute_node_servers }}"
 
 - name: Create compute node servers
