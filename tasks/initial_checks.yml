@@ -49,7 +49,9 @@
 - name: Fail when provided network is not external
   fail:
     msg: "Network {{ external_network }} is not external!"
-  when: openstack_external_network[0]['router:external'] != true
+  when:
+    - openstack_external_network[0]['router:external'] != true
+    - skip_external_network_check is not defined
 
 - name: Verify that openshift-install binary is in-place
   local_action: stat path="{{ openshift_install_binary_path }}"
