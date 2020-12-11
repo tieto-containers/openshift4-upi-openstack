@@ -14,9 +14,11 @@
     name: "{{ item.1 }}-{{ item.0 }}"
     network: "{{ os_network }}"
     security_groups:
-    - "{{ os_worker_secgrp }}"
+      - "{{ os_worker_secgrp }}"
     allowed_address_pairs:
-    - ip_address: "{{ subnet_range | next_nth_usable(7) }}"
+      - ip_address: "{{ subnet_range | next_nth_usable(7) }}"
+    fixed_ips:
+      - ip_address: "{{ subnet_range | next_nth_usable(openshift_workers_nth_usable_addr+item.0)}}"
   with_indexed_items: "{{ [os_port_worker] * compute_node_servers }}"
 
 - name: Create compute node boot volumes

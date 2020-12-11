@@ -15,11 +15,13 @@
     name: "{{ item.1 }}-{{ item.0 }}"
     network: "{{ os_network }}"
     security_groups:
-    - "{{ os_master_secgrp }}"
+      - "{{ os_master_secgrp }}"
     allowed_address_pairs:
-    - ip_address: "{{ subnet_range | next_nth_usable(5) }}"
-    - ip_address: "{{ subnet_range | next_nth_usable(6) }}"
-    - ip_address: "{{ subnet_range | next_nth_usable(7) }}"
+      - ip_address: "{{ subnet_range | next_nth_usable(5) }}"
+      - ip_address: "{{ subnet_range | next_nth_usable(6) }}"
+      - ip_address: "{{ subnet_range | next_nth_usable(7) }}"
+    fixed_ips:
+      - ip_address: "{{ subnet_range | next_nth_usable(openshift_masters_nth_usable_addr+item.0)}}"
   with_indexed_items: "{{ [os_port_master] * control_plane_servers }}"
 
 - name: Create control plane servers
