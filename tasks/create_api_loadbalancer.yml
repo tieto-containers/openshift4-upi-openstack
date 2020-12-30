@@ -17,17 +17,6 @@
 # Create API pool
 # Create API pool members
 # Create API listener health monitor
-#
-# Get master nodes ip addresses for Ingress
-# Get Ingress FIP
-# Create Ingress lb
-# Check if FIP address associated
-# Get Ingress lb port ID
-# Associate Ingress Floating IP to Virtual IP
-# Create Ingress listener
-# Create Ingress pool
-# Create Ingress pool members
-# Create Ingress listener health monitor
 
 - name: Is neutron binary available?
   shell: which neutron
@@ -41,10 +30,6 @@
     lb_api_name: "lb_api"
     lb_api_vip_address: "{{ subnet_range | next_nth_usable(20) }}"
     api_pool_members_exist: false
-    ingress_port: 443
-    lb_ingress_name: "lb_ingress"
-    lb_ingress_vip_address: "{{ subnet_range | next_nth_usable(21) }}"
-    ingress_pool_members_exist: false
 
 - name: "Check neutron binary at {{ neutron }}"
   stat: path={{ neutron }}
@@ -60,9 +45,6 @@
   register: lb_list
   check_mode: no
 
-#
-# API
-# 
 - name: Get master nodes ip addresses
   local_action: shell {{ neutron }} port-show -f json {{ os_port_master }}-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
   register: fixed_ip_masters
