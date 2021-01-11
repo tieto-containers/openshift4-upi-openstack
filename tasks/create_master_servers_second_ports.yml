@@ -27,4 +27,4 @@
     network: "{{ openshift_masters_second_network_name }}"
     fixed_ips:
       - ip_address: "{{ openshift_masters_second_network | next_nth_usable(openshift_masters_nth_usable_addr+item.0) }}"
-  with_indexed_items: "{{ [os_port_master_second]] * control_plane_servers }}"
+  with_indexed_items: "{{ [os_port_master_second] * control_plane_servers }}"
