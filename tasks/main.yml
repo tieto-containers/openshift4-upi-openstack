@@ -99,5 +99,5 @@
   import_tasks: create_master_servers_second_ports.yml
   when:
     - not REMOVE_OCP4_CLUSTER|bool
-    - openshift_masters_second_network is defined
+    - openshift_masters_second_network_name is defined
     - skip_masters_second_interface_creation is not defined
