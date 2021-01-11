@@ -22,6 +22,5 @@
     name: "{{ item.name }}-secondary-port-2"
     network: "{{ openshift_masters_second_network_name }}"
     fixed_ips:
-      - ip_address: "{{ openshift_masters_second_network | ipaddr('next_usable') }}"
-  with_items:
-    - "{{ register_master_servers.openstack_servers }}"
+      - ip_address: "{{ openshift_masters_second_network | next_nth_usable(openshift_masters_nth_usable_addr+item.0) }}"
+  with_indexed_items: "{{ [os_port_master] * control_plane_servers }}"
