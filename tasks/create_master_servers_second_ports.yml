@@ -23,7 +23,7 @@
   os_port:
     cloud: "{{ openstack_cloud_name }}"
     state: present
-    name: "{{ item.1 }}-{{ item.1 }}"
+    name: "{{ item.1 }}-{{ item.0 }}"
     network: "{{ openshift_masters_second_network_name }}"
     fixed_ips:
       - ip_address: "{{ openshift_masters_second_network | next_nth_usable(openshift_masters_nth_usable_addr+item.0) }}"
