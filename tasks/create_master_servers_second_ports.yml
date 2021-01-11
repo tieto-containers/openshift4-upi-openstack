@@ -1,11 +1,21 @@
 ---
-- name: retrieve information about all master servers
+- name: Retrieve info about second network
+  os_networks_info:
+    cloud: "{{ openstack_cloud_name }}"
+    name: "{{ openshift_masters_second_network_name }}"
+  register: register_second_network_info
+
+- name: Set second network subnet CIDR fact
+  set_fact:
+    openshift_masters_second_network: "{{ register_second_network_info.openstack_networks[0].subnet_ipam[0].subnet_cidr }}"
+
+- name: Retrieve information about all master servers
   os_server_info:
     cloud: "{{ openstack_cloud_name }}"
     server: "openshift*master*"
   register: register_master_servers
 
-- name: create second master port
+- name: Create second master port
   os_port:
     cloud: "{{ openstack_cloud_name }}"
     state: present
