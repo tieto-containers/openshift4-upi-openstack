@@ -20,7 +20,7 @@
     cloud: "{{ openstack_cloud_name }}"
     state: present
     name: "{{ item.name }}-secondary-port-2"
-    network: "{{ openshift_masters_second_network }}"
+    network: "{{ openshift_masters_second_network_name }}"
     fixed_ips:
       - ip_address: "{{ openshift_masters_second_network | ipaddr('next_usable') }}"
   with_items:
