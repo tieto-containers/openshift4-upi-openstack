@@ -37,7 +37,9 @@
 
 - name: Import bootstrap server playbook
   import_tasks: bootstrap_server.yml
-  when: not REMOVE_OCP4_CLUSTER|bool
+  when:
+    - not REMOVE_OCP4_CLUSTER|bool
+    - skip_bootstrap_server_creation is not defined
 
 - name: "Wait for bootstrap server to prepare"
   pause:
@@ -46,7 +48,9 @@
 
 - name: Import control plane playbook
   import_tasks: control_plane_servers.yml
-  when: not REMOVE_OCP4_CLUSTER|bool
+  when: 
+    - not REMOVE_OCP4_CLUSTER|bool
+    - skip_control_plane_servers_creation is not defined
 
 - name: "Create API load balancer"
   import_tasks: create_api_loadbalancer.yml
@@ -81,3 +85,10 @@
     - not REMOVE_OCP4_CLUSTER|bool
     - openshift_ingress_fip is defined
     - openshift_ingress_fip != ''
+
+- name: "Create master servers second interface ports"
+  import_tasks: create_master_servers_second_ports.yml
+  when:
+    - not REMOVE_OCP4_CLUSTER|bool
+    - openshift_masters_second_network is defined
+    - skip_masters_second_interface_creation is not defined

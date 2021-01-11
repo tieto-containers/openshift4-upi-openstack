@@ -1,0 +1,17 @@
+---
+- name: retrieve information about all master servers
+  os_server_info:
+    cloud: "{{ openstack_cloud_name }}"
+    server: "openshift*master*"
+  register: register_master_servers
+
+- name: create second master port
+  os_port:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: "{{ item.name }}-secondary-port-2"
+    network: "{{ openshift_masters_second_network }}"
+    fixed_ips:
+      - ip_address: "{{ openshift_masters_second_network | ipaddr('next_usable') }}"
+  with_items:
+    - "{{ register_master_servers.openstack_servers }}"

@@ -33,7 +33,7 @@
 
 - name: Set os_port_master variable
   set_fact:
-    os_port_master: "{{ openshift_cluster_id }}-master-port"
+    os_port_master: "{{ openshift_cluster_id }}-master-default-port"
 
 - name: Set os_port_worker variable
   set_fact:
