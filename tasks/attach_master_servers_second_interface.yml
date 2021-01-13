@@ -41,9 +41,9 @@
     server: "*master*"
   register: reg_masters
 
- - name: Set the second interface default gw
-      set_fact:
-        masters_second_if_gw_ip: "{{ openshift_masters_second_network | ansible.netcommon.ipaddr('net') | ansible.netcommon.ipaddr('1') | regex_findall('\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b') }}"
+- name: Set the second interface default gw
+  set_fact:
+    masters_second_if_gw_ip: "{{ openshift_masters_second_network | ansible.netcommon.ipaddr('net') | ansible.netcommon.ipaddr('1') | regex_findall('\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b') }}"
 
 - name: Delete route for the second interface
   local_action: "shell ssh -F ssh.cfg master{{ item }} 'sudo route del default gw {{ masters_second_if_gw_ip }}'"
