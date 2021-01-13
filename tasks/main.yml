@@ -54,6 +54,10 @@
     - not REMOVE_OCP4_CLUSTER|bool
     - skip_control_plane_servers_creation is not defined
 
+- name: "Wait for control plane servers initial bootstrap"
+  pause:
+    minutes: 2
+
 - name: "Create master servers second interface ports"
   import_tasks: attach_master_servers_second_interface.yml
   when:
