@@ -36,3 +36,10 @@
     meta:
       hostname: "{{ item.1 }}-{{ item.0 }}"
   with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
+
+- name: "Create master servers second interface ports"
+  import_tasks: attach_master_servers_second_interface.yml
+  when:
+    - not REMOVE_OCP4_CLUSTER|bool
+    - openshift_masters_second_network_name is defined
+    - skip_masters_second_interface_creation is not defined

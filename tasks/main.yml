@@ -58,13 +58,6 @@
   pause:
     minutes: 2
 
-- name: "Create master servers second interface ports"
-  import_tasks: attach_master_servers_second_interface.yml
-  when:
-    - not REMOVE_OCP4_CLUSTER|bool
-    - openshift_masters_second_network_name is defined
-    - skip_masters_second_interface_creation is not defined
-
 - name: "Create API load balancer"
   import_tasks: create_api_loadbalancer.yml
   when:
