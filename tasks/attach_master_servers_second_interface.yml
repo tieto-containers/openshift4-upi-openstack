@@ -30,6 +30,7 @@
     hostname: "{{ item.private_v4 }}"
     groupname: masters
   loop: "{{ reg_masters.openstack_servers }}"
+  no_log: yes
 
 - name: Create second master port
   os_port:
