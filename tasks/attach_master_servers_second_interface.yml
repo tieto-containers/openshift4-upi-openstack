@@ -22,7 +22,7 @@
 - name: Get master nodes ip addresses
   os_server_info:
     cloud: "{{ openstack_cloud_name }}"
-    server: "*master*"
+    server: "openshift*master*"
   register: reg_masters
   
 - name: Add master hosts to the masters host group
