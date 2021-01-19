@@ -37,6 +37,10 @@
       hostname: "{{ item.1 }}-{{ item.0 }}"
   with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
 
+- name: Pause for a minute
+  pause:
+    seconds: 60
+
 - name: "Create master servers second interface ports"
   import_tasks: attach_master_servers_second_interface.yml
   when:
