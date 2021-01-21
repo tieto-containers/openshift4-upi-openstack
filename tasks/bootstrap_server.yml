@@ -26,6 +26,7 @@
 - name: Attach FIP to the bootstrap server
   os_floating_ip:
     state: present
+    reuse: yes
     network: "{{ external_network }}"
     server: "{{ openshift_cluster_id }}-bootstrap"
   when:
