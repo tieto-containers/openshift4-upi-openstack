@@ -63,7 +63,7 @@
   when:
     - not REMOVE_OCP4_CLUSTER|bool
     - openshift_api_fip is defined
-    - openshift_api_fip != ''
+    - openshift_api_fip | ipaddr('bool')
 
 - name: "Wait for control server to finish installation"
   pause:
@@ -97,5 +97,4 @@
   when:
     - not REMOVE_OCP4_CLUSTER|bool
     - openshift_ingress_fip is defined
-    - openshift_ingress_fip != ''
-
+    - openshift_api_fip | ipaddr('bool')

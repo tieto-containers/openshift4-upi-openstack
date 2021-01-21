@@ -61,6 +61,14 @@
   local_action: stat path="{{ swift_binary_path }}"
   register: stat_swift_binary
 
+- name: Get path to neutron binary
+  shell: which neutron
+  register: neutron_path
+
+- name: Verify that neutron binary is in-place
+  local_action: stat path={{ neutron_path.stdout }}
+  register: stat_neutron_binary
+
 - name: Fail when could not find openshift-install binary
   fail:
     msg: "Could not find openshift-install file in {{ openshift_install_binary_path }}!"
@@ -70,6 +78,11 @@
   fail:
     msg: "Could not find OpenStack Swift binary"
   when: stat_swift_binary['stat']['exists'] != true
+
+- name: Fail when could not find neutron binary
+  fail:
+    msg: "Could not find OpenStack Neutron binary!"
+  when: stat_neutron_binary['stat']['exists'] != true
 
 - name: Verify if subnet_range network exists
   os_networks_info:
@@ -82,6 +95,16 @@
   when:
     - subnet_range_result.openstack_networks != []
     - use_existing_subnet_range is not defined 
+
+- name: Fail when lb_api_fip_address and lb_ingress_fip_address set to the same IP
+  fail:
+    msg: "lb_api_fip_address set to same value as lb_ingress_fip_address!"
+  when: lb_api_fip_address == lb_ingress_fip_address
+
+- name: Fail when openshift_api_fip and openshift_ingress_fip address set to the same IP
+  fail:
+    msg: "openshift_api_fip address set to same value as openshift_api_fip!"
+  when: openshift_api_fip == openshift_ingress_fip
 
 - name: Verify that Red Hat CoreOS image is already uploaded to the OpenStack
   os_image_info:

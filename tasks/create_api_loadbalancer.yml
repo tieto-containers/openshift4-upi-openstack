@@ -4,7 +4,6 @@
 
 # Workflow:
 #
-# Verify neutron binary
 # Get existing load balancers
 #
 # Get master nodes ip addresses for API
@@ -29,13 +28,9 @@
 # Create Ingress pool members
 # Create Ingress listener health monitor
 
-- name: Is neutron binary available?
-  shell: which neutron
-  register: reg_neutron_path
-
 - name: Set facts
   set_fact:
-    neutron: "{{ reg_neutron_path.stdout }}"
+    neutron: "{{ stat_neutron_binary['stat']['path'] }}"
     ocp_id: "{{ openshift_cluster_id }}"
     api_port: 6443
     lb_api_name: "lb_api"
@@ -45,15 +40,6 @@
     lb_ingress_name: "lb_ingress"
     lb_ingress_vip_address: "{{ subnet_range | next_nth_usable(21) }}"
     ingress_pool_members_exist: false
-
-- name: "Check neutron binary at {{ neutron }}"
-  stat: path={{ neutron }}
-  register: stat_neutron
-
-- name: Fail if neutron binary not found
-  fail:
-    msg: "Neutron binary not found at {{ neutron }}!"
-  when: stat_neutron.stat.exists == false
 
 - name: Get load balancer list
   local_action: shell {{ neutron }} lbaas-loadbalancer-list -f json | jq -r '.[].name'
