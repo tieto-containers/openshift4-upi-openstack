@@ -54,35 +54,23 @@
     - skip_external_network_check is not defined
 
 - name: Verify that openshift-install binary is in-place
-  local_action: stat path="{{ openshift_install_binary_path }}"
+  local_action: stat path={{ openshift_install_binary_path }}
   register: stat_openshift_install
-
-- name: Verify that swift is in-place
-  local_action: stat path="{{ swift_binary_path }}"
-  register: stat_swift_binary
-
-- name: Get path to neutron binary
-  shell: which neutron
-  register: neutron_path
-
-- name: Verify that neutron binary is in-place
-  local_action: stat path={{ neutron_path.stdout }}
-  register: stat_neutron_binary
 
 - name: Fail when could not find openshift-install binary
   fail:
     msg: "Could not find openshift-install file in {{ openshift_install_binary_path }}!"
   when: stat_openshift_install['stat']['exists'] != true
 
-- name: Fail when cound not find swift binary
-  fail:
-    msg: "Could not find OpenStack Swift binary"
-  when: stat_swift_binary['stat']['exists'] != true
+- name: Fail when swift binary not found
+  ansible.builtin.command: which swift
+  register: which_swift_result
+  failed_when: which_swift_result.rc == 1
 
-- name: Fail when could not find neutron binary
-  fail:
-    msg: "Could not find OpenStack Neutron binary!"
-  when: stat_neutron_binary['stat']['exists'] != true
+- name: Fail when neutron binary not found
+  ansible.builtin.command: which neutron
+  register: which_neutron_result
+  failed_when: which_neutron_result.rc == 1
 
 - name: Verify if subnet_range network exists
   os_networks_info:
