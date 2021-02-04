@@ -41,6 +41,8 @@
     - not REMOVE_OCP4_CLUSTER|bool
     - skip_bootstrap_server_creation is not defined
 
+# TODO Check bootstrap server logs to check the bootstrapping status
+# and don't wait fixed amount of time
 - name: "Wait for bootstrap server to prepare"
   pause:
     minutes: 4
@@ -63,8 +65,9 @@
   when:
     - not REMOVE_OCP4_CLUSTER|bool
     - openshift_api_fip is defined
-    - openshift_api_fip | ipaddr('bool')
+    - openshift_api_fip != ''
 
+# TODO Check master servers logs for control server handover of k8s API
 - name: "Wait for control server to finish installation"
   pause:
     minutes: 8
@@ -97,4 +100,5 @@
   when:
     - not REMOVE_OCP4_CLUSTER|bool
     - openshift_ingress_fip is defined
-    - openshift_api_fip | ipaddr('bool')
+    - openshift_ingress_fip != ''
+

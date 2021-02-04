@@ -65,12 +65,14 @@
   set_fact:
     masters_second_if_gw_ip: "{{ openshift_masters_second_network | ansible.netcommon.ipaddr('net') | ansible.netcommon.ipaddr('1') | regex_findall('\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b') }}"
 
+# TODO Verify, that we have two interfaces. In case that we don't have one, skip this task, or fail???
 - name: Get the second interface UUID
   local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ item }} sudo nmcli conn | grep ens | tail -n 1 | awk '{ print $(NF-2)}'
   loop: "{{ groups.masters }}"
   register: reg_nmcli_eth_uuid
 
-- name: Removce default route from second interface
+# TODO Don't remove default route for primary interface
+- name: Remove default route from second interface
   local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo nmcli conn mod {{ reg_nmcli_eth_uuid.results[item].stdout }} ipv4.never-default true
   loop: [0, 1, 2]
 
