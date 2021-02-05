@@ -8,3 +8,5 @@
 - name: run update_master_ignition.sh
   local_action: shell cd "{{ openshift_upi_directory }}" && /bin/bash update_master_ignition.sh
 
+- name: run modify_master_ign.py
+  local_action: shell cd "{{ openshift_upi_directory }}" && python modify_master_ign.py

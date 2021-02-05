@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+import json
+
+CLUSTER_ID="{{ openshift_cluster_id }}"
+SOURCE = {'source': '{{ master_ignition_url }}', 'verification': {}}
+
+for num in [0, 1, 2]:
+    with open('openshift-{}-master-{}-ignition.json'.format(CLUSTER_ID, num), 'r') as f:
+        ignition = json.load(f)
+    ignition['ignition']['config']['append'][0] = SOURCE
+
+    with open('openshift-{}-master-{}-ignition.json'.format(CLUSTER_ID, num), 'w') as f:
+        json.dump(ignition, f)

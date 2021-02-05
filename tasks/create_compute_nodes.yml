@@ -1,3 +1,4 @@
+---
 - name: Upload worker ignition file to the Swift
   os_object:
     cloud: "{{ openstack_cloud_name }}"
@@ -6,7 +7,6 @@
     container: "{{ openshift_cluster_id }}"
     filename: "{{ openshift_upi_directory }}/worker.ign"
     container_access: public
-
 
 - name: Create compute node ports
   ignore_errors: True

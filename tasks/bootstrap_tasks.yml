@@ -41,7 +41,16 @@
   set_fact:
     bootstrap_ignition_url: "{{ swift_url_reg.stdout }}/{{ openshift_cluster_id }}/bootstrap.ign"
     worker_ignition_url: "{{ swift_url_reg.stdout }}/{{ openshift_cluster_id }}/worker.ign"
+    master_ignition_url: "{{ swift_url_reg.stdout }}/{{ openshift_cluster_id }}/master.ign"
     os_bootstrap_ignition: "{{ openshift_upi_directory }}/{{ openshift_cluster_id }}-bootstrap-ignition.json"
 
 - name: Create Bootstrap Ignition Shim
   local_action: template src=bootstrap-ignition.json.j2 dest="{{ os_bootstrap_ignition }}"
+
+# HACK
+# Because OpenStack is getting (for some reason) problem with deployment of the third master server
+# (master can't fetch its ignition conf from bootstrap server), we are uploading master.ign to the Swift
+# and download it from there
+- name: Deploy Python script to modify master ignition file (again)
+  local_action: template src=modify_master_ign.py.j2 dest="{{ openshift_upi_directory }}/modify_master_ign.py" mode='0755'
+  notify: run modify_master_ign.py

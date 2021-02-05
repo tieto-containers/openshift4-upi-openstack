@@ -1,4 +1,15 @@
 ---
+# HACK
+# Make it optional?
+- name: Upload master ignition file to the Swift
+  os_object:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: master.ign
+    container: "{{ openshift_cluster_id }}"
+    filename: "{{ openshift_upi_directory }}/master.ign"
+    container_access: public
+
 - name: Create boot volume
   os_volume:
     state: present
