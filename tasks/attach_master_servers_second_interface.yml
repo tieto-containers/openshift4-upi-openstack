@@ -48,10 +48,10 @@
     cmd: "openstack server add port {{ openshift_cluster_id }}-master-{{ item.0 }} {{ item.1 }}-{{ item.0 }}"
   with_indexed_items: "{{ [os_port_master_second] * control_plane_servers }}" 
 
-
-- name: Remove from SSH's known hosts (possible) new master servers records
-  local_action: shell ssh-keygen -R {{ item }}
-  with_items: "{{ groups.masters }}"
+# not needed anymore as running within container
+# - name: Remove from SSH's known hosts (possible) new master servers records
+#   local_action: shell ssh-keygen -R {{ item }}
+#   with_items: "{{ groups.masters }}"
 
 - name: Wait for master servers SSH to come up
   local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ item }} echo hello
@@ -67,19 +67,33 @@
 
 # TODO Verify, that we have two interfaces. In case that we don't have one, skip this task, or fail???
 - name: Get the second interface UUID
-  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ item }} sudo nmcli conn | grep ens | tail -n 1 | awk '{ print $(NF-2)}'
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ item }} sudo nmcli conn | grep ens | head -n 1 | awk '{ print $(NF-2)}'
   loop: "{{ groups.masters }}"
   register: reg_nmcli_eth_uuid
 
-# TODO Don't remove default route for primary interface
-- name: Remove default route from second interface
+# first interface only serves for purpose of control plane communication, second one needs to be open to wider subnet
+- name: Remove default route from first interface
   local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo nmcli conn mod {{ reg_nmcli_eth_uuid.results[item].stdout }} ipv4.never-default true
   loop: [0, 1, 2]
 
-- name: Shutdown second interface
-  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo nmcli conn down {{ reg_nmcli_eth_uuid.results[item].stdout }}
+# /16 subnet for control plane - worker communication
+- name: Adding manual route to 
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo nmcli conn modify {{ reg_nmcli_eth_uuid.results[item].stdout }} $IPROUTE
+  environment:
+    IPROUTE: +ipv4.routes "44.44.0.0/16 44.44.0.129"
+    ignore_errors: yes
   loop: [0, 1, 2]
 
-- name: Start second interface
-  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo nmcli conn up {{ reg_nmcli_eth_uuid.results[item].stdout }}
-  loop: [0, 1, 3]
+# nmcli apparently doens't have restart option? so rebooting the dirty way
+- name: Reboot masters
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo reboot
+  ignore_errors: yes
+  loop: [0, 1, 2]
+
+# - name: Shutdown second interface
+#   local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo nmcli conn down {{ reg_nmcli_eth_uuid.results[item].stdout }}
+#   loop: [0, 1, 2]
+
+# - name: Start second interface
+#   local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.masters[item] }} sudo nmcli conn up {{ reg_nmcli_eth_uuid.results[item].stdout }}
+#   loop: [0, 1, 2]

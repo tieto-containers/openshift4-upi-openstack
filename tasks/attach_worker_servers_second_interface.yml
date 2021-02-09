@@ -1,0 +1,94 @@
+---
+- name: Retrieve info about second network
+  os_networks_info:
+    cloud: "{{ openstack_cloud_name }}"
+    name: "{{ openshift_masters_second_network_name }}"
+  register: register_second_network_info
+
+- name: Set second network subnet CIDR fact
+  set_fact:
+    openshift_workers_second_network: "{{ register_second_network_info.openstack_networks[0].subnet_ipam[0].subnet_cidr }}"
+
+- name: Set os_port_worker_second variable
+  set_fact:
+    os_port_worker_second: "{{ openshift_cluster_id }}-worker-second-port"
+
+- name: Retrieve information about all worker servers
+  os_server_info:
+    cloud: "{{ openstack_cloud_name }}"
+    server: "openshift*worker*"
+  register: register_worker_servers
+
+- name: Get worker nodes ip addresses
+  os_server_info:
+    cloud: "{{ openstack_cloud_name }}"
+    server: "openshift*worker*"
+  register: reg_workers
+  
+- name: Add worker hosts to the workers host group
+  add_host:
+    hostname: "{{ item.private_v4 }}"
+    groupname: workers
+  loop: "{{ reg_workers.openstack_servers }}"
+  no_log: yes
+
+- name: Create second worker port
+  os_port:
+    cloud: "{{ openstack_cloud_name }}"
+    state: present
+    name: "{{ item.1 }}-{{ item.0 }}"
+    network: "{{ openshift_masters_second_network_name }}"
+    allowed_address_pairs:
+    - ip_address: "{{ openshift_workers_second_network | next_nth_usable(7) }}"
+    fixed_ips:
+      - ip_address: "{{ openshift_workers_second_network | next_nth_usable(openshift_workers_nth_usable_addr+item.0) }}"
+  with_indexed_items: "{{ [os_port_worker_second] * compute_node_servers }}"
+
+- name: Attach second network interface to the worker servers
+  ignore_errors: True
+  shell:
+    cmd: "openstack server add port {{ openshift_cluster_id }}-worker-{{ item.0 }} {{ item.1 }}-{{ item.0 }}"
+  with_indexed_items: "{{ [os_port_worker_second] * compute_node_servers }}" 
+
+
+# - name: Remove from SSH's known hosts (possible) new worker servers records
+#   local_action: shell ssh-keygen -R {{ item }}
+#   with_items: "{{ groups.workers }}"
+
+- name: Wait for worker servers SSH to come up
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ item }} echo hello
+  retries: 5
+  delay: 5
+  register: reg_ssh
+  until: reg_ssh.stdout.find('hello') != -1
+  with_items: "{{ groups.workers }}"
+
+- name: Set the second interface default gw
+  set_fact:
+    workers_second_if_gw_ip: "{{ openshift_workers_second_network | ansible.netcommon.ipaddr('net') | ansible.netcommon.ipaddr('1') | regex_findall('\\b(?:[0-9]{1,3}\\.){3}[0-9]{1,3}\\b') }}"
+
+# TODO Verify, that we have two interfaces. In case that we don't have one, skip this task, or fail???
+- name: Get the second interface UUID
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ item }} sudo nmcli conn | grep ens | head -n 1 | awk '{ print $(NF-2)}'
+  loop: "{{ groups.workers }}"
+  register: reg_nmcli_eth_uuid
+
+- name: Remove default route from second interface
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.workers[item] }} sudo nmcli conn mod {{ reg_nmcli_eth_uuid.results[item].stdout }} ipv4.never-default true
+  loop: [0, 1, 2]
+
+- name: Remove default route from second interface
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.workers[item] }} sudo nmcli conn modify {{ reg_nmcli_eth_uuid.results[item].stdout }} $IPROUTE
+  environment:
+    IPROUTE: +ipv4.routes "44.44.0.0/16 44.44.0.129"
+    ignore_errors: yes
+  loop: [0, 1, 2]
+
+- name: Reboot workers
+  local_action: shell ssh -o "UserKnownHostsFile /dev/null" -o "StrictHostKeyChecking no" -F ssh.cfg core@{{ groups.workers[item] }} sudo reboot
+  ignore_errors: yes
+  loop: [0, 1, 2]
+
+- name: "Wait for reboot"
+  pause:
+    minutes: 1
