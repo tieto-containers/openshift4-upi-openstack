@@ -6,18 +6,7 @@
 #
 # Get existing load balancers
 #
-# Get master nodes ip addresses for API
-# Get API FIP
-# Create API lb
-# Check if FIP address associated
-# Get API lb port ID
-# Associate API Floating IP to Virtual IP
-# Create API listener
-# Create API pool
-# Create API pool members
-# Create API listener health monitor
-#
-# Get master nodes ip addresses for Ingress
+# Get worker nodes ip addresses for Ingress
 # Get Ingress FIP
 # Create Ingress lb
 # Check if FIP address associated
@@ -32,10 +21,6 @@
   set_fact:
     neutron: "{{ stat_neutron_binary['stat']['path'] }}"
     ocp_id: "{{ openshift_cluster_id }}"
-    api_port: 6443
-    lb_api_name: "lb_api"
-    lb_api_vip_address: "{{ subnet_range | next_nth_usable(20) }}"
-    api_pool_members_exist: false
     ingress_port: 443
     lb_ingress_name: "lb_ingress"
     lb_ingress_vip_address: "{{ subnet_range | next_nth_usable(21) }}"
@@ -46,9 +31,6 @@
   register: lb_list
   check_mode: no
 
-#
-# Ingress
-#
 # TODO: Handle all worker nodes, not only firt three 
 - name: Get worker nodes ip addresses
   local_action: shell {{ neutron }} port-show -f json {{ os_port_worker }}-{{ item }} | jq -r '.fixed_ips[] | .ip_address'
