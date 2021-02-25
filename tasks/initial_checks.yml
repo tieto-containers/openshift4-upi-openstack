@@ -111,14 +111,3 @@
   fail:
     msg: "Could not find {{ rhcos_image_name }} on OpenStack, nor {{ rhcos_image_file }} locally!"
   when: (openstack_rhcos_image_name == "") and (rhcos_image_file_result['stat']['exists'] != true)
-
-- name: Upload the CoreOS image if it's present locally but not remotelly 
-  os_image:
-    name: rhcos
-    cloud: "{{ openstack_cloud_name }}"
-    state: present
-    container_format: bare
-    disk_format: qcow2
-    filename: "{{ rhcos_image_file }}"
-  when: (openstack_rhcos_image_name == "") and (rhcos_image_file_result['stat']['exists'] == true)
-
