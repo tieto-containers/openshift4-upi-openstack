@@ -1,5 +1,11 @@
 ---
+- name: Detach bootsrap server FIP
+  os_floating_ip:
+    state: absent
+    server: "{{ openshift_cluster_id }}-bootstrap"
+
 - name: Remove bootstrap server
   os_server:
     name: "{{ openshift_cluster_id }}-bootstrap"
     state: absent
+
