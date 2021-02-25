@@ -19,7 +19,7 @@
 
 - name: Set facts
   set_fact:
-    neutron: "{{ stat_neutron_binary['stat']['path'] }}"
+    neutron: "{{ which_neutron_result.stdout }}"
     ocp_id: "{{ openshift_cluster_id }}"
     api_port: 6443
     lb_api_name: "lb_api"
