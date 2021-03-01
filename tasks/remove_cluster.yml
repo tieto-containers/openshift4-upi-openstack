@@ -26,6 +26,12 @@
     state: absent
     display_name: "{{ item.1 }}-{{ item.0 }}-root"
   with_indexed_items: "{{ [os_master_server_name] * control_plane_servers }}"
+
+- name: Remove compute nodes boot volume
+  os_volume:
+    state: absent
+    display_name: "{{ item.1 }}-{{ item.0 }}-root"
+  with_indexed_items: "{{ [os_worker_server_name] * compute_node_servers }}"
   
 - name: Delete bootstrap server port
   os_port:
