@@ -29,5 +29,10 @@
     reuse: yes
     network: "{{ external_network }}"
     server: "{{ openshift_cluster_id }}-bootstrap"
+  register: result
   when:
     - skip_attaching_bootstrap_fip is not defined
+
+- name: Set bootstrap server FIP fact
+  set_fact:
+    bootstrap_fip: "{{ result.floating_ip.floating_ip_address }}"
