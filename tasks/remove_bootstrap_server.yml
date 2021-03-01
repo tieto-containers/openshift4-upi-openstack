@@ -3,6 +3,7 @@
   os_floating_ip:
     state: absent
     server: "{{ openshift_cluster_id }}-bootstrap"
+    fixed_address: "{{ bootstrap_fip }}"
 
 - name: Remove bootstrap server
   os_server:
